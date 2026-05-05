@@ -4,10 +4,11 @@ import {
   buildClient,
   ClientCtx,
   loadKeypair,
+  loadKeypairFromBase64,
   lookingGlassPda,
   epochSquarePda,
 } from "./anchor-client";
-import { log } from "./logger";
+import { log, setLogFormat } from "./logger";
 import { fireTick } from "./tick";
 import {
   startListener,
@@ -160,13 +161,18 @@ function broadcastStatus(state: KeeperState, sse: SseServer): void {
 
 async function main(): Promise<void> {
   const cfg = loadConfig();
+  setLogFormat(cfg.logFormat);
   if (!cfg.anthropicApiKey) {
     log.system(
       "warning: ANTHROPIC_API_KEY not set — every prophecy will fall back to the template generator."
     );
   }
-  const keeperKp = loadKeypair(cfg.keeperKeypairPath);
-  const oracleKp = loadKeypair(cfg.oracleKeypairPath);
+  const keeperKp = cfg.keeperKeypairBase64
+    ? loadKeypairFromBase64(cfg.keeperKeypairBase64, "KEEPER_KEYPAIR")
+    : loadKeypair(cfg.keeperKeypairPath!);
+  const oracleKp = cfg.oracleKeypairBase64
+    ? loadKeypairFromBase64(cfg.oracleKeypairBase64, "ORACLE_KEYPAIR")
+    : loadKeypair(cfg.oracleKeypairPath!);
   const ctx = buildClient({
     rpcUrl: cfg.rpcUrl,
     wsUrl: cfg.wsUrl,
@@ -188,7 +194,7 @@ async function main(): Promise<void> {
   };
 
   const sse = new SseServer();
-  sse.start(cfg.ssePort);
+  sse.start(cfg.ssePort, cfg.sseHost);
   log.rule();
   log.data("looking glass keeper online");
   log.data(`program  ${ctx.programId.toBase58()}`);
@@ -198,7 +204,7 @@ async function main(): Promise<void> {
   log.data(`rpc      ${cfg.rpcUrl}`);
   log.data(`metrics  ${cfg.metricsRpcUrl}`);
   log.data(`ws       ${cfg.wsUrl}`);
-  log.data(`sse      http://localhost:${cfg.ssePort}/events`);
+  log.data(`sse      bound to ${cfg.sseHost}:${cfg.ssePort} (/events, /health)`);
   if (cfg.debugFastTick) {
     log.data("DEBUG_FAST_TICK is on (keeper-side gate disabled).");
   }

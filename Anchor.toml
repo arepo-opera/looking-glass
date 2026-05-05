@@ -6,13 +6,16 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-looking_glass = "GTEVyfq7zL91k1zjZrJCmkeidBvgDfMdEXUUsMcQWq5r"
+looking_glass = "EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu"
+
+[programs.devnet]
+looking_glass = "EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

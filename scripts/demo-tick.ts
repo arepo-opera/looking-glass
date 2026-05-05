@@ -11,9 +11,14 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
-const RPC_URL = process.env.LOOKING_GLASS_RPC ?? "http://127.0.0.1:8899";
+// Default to devnet so the script "just works" against the deployed program
+// after Phase 9. Override with RPC_URL=http://127.0.0.1:8899 for localnet.
+const RPC_URL =
+  process.env.RPC_URL ??
+  process.env.LOOKING_GLASS_RPC ??
+  "https://api.devnet.solana.com";
 const PROGRAM_ID = new PublicKey(
-  "GTEVyfq7zL91k1zjZrJCmkeidBvgDfMdEXUUsMcQWq5r"
+  process.env.PROGRAM_ID ?? "EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu"
 );
 const MIN_TICK_INTERVAL = 180;
 const SQUARE_SIZE = 5;

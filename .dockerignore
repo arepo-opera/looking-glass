@@ -1,0 +1,14 @@
+**/node_modules
+**/.next
+**/dist
+**/target
+**/.anchor
+**/test-ledger
+**/.env
+**/.env.*
+.git
+.github
+docs
+web/.next
+web/public/fonts/*.ttf
+*.log

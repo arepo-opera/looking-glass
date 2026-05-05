@@ -39,3 +39,9 @@ yarn-debug.log*
 **/target/deploy/*-keypair.json
 web/.next/
 web/tsconfig.tsbuildinfo
+
+# Any stray keypair JSON anywhere in the tree (defense in depth — never
+# commit these by accident)
+**/*-keypair.json
+keeper-keypair.json
+oracle-keypair.json

@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use solana_keccak_hasher::{hashv, Hash};
 
-declare_id!("GTEVyfq7zL91k1zjZrJCmkeidBvgDfMdEXUUsMcQWq5r");
+declare_id!("EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu");
 
 pub const MIN_TICK_INTERVAL: i64 = 180;
 pub const MAX_NONCE_ATTEMPTS: u64 = 50_000;

@@ -1,9 +1,9 @@
 "use client";
 import React from "react";
 
-const PROGRAM_ID = "GTEVyfq7zL91k1zjZrJCmkeidBvgDfMdEXUUsMcQWq5r";
-const EXPLORER_URL = `https://solscan.io/account/${PROGRAM_ID}`;
-const GITHUB_URL = "[GITHUB_URL]";
+const PROGRAM_ID = "EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu";
+const EXPLORER_URL = `https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`;
+const GITHUB_URL = "https://github.com/mschreiber89/sator-looking-glass";
 
 const RULE = "─".repeat(60);
 const SECTION_RULE = "═".repeat(60);

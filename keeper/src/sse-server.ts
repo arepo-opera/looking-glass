@@ -32,7 +32,7 @@ export class SseServer {
   private server: http.Server | null = null;
   private latest = new Map<LiveEvent["type"], LiveEvent>();
 
-  start(port: number): void {
+  start(port: number, host: string = "0.0.0.0"): void {
     this.server = http.createServer((req, res) => {
       // Permissive CORS — this is a local dev convenience server.
       res.setHeader("Access-Control-Allow-Origin", "*");
@@ -67,15 +67,22 @@ export class SseServer {
         });
         return;
       }
-      if (req.url === "/healthz") {
+      if (req.url === "/health" || req.url === "/healthz") {
         res.writeHead(200, { "Content-Type": "text/plain" });
         res.end("ok");
+        return;
+      }
+      if (req.url === "/" && req.method === "GET") {
+        res.writeHead(200, { "Content-Type": "text/plain" });
+        res.end(
+          "looking glass keeper. /events for the SSE stream, /health for liveness.\n"
+        );
         return;
       }
       res.writeHead(404);
       res.end();
     });
-    this.server.listen(port);
+    this.server.listen(port, host);
   }
 
   broadcast(event: LiveEvent): void {
