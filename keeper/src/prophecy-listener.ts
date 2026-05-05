@@ -1,10 +1,13 @@
 import {
   ClientCtx,
   epochSquarePda,
+  lookingGlassPda,
 } from "./anchor-client";
 import { log } from "./logger";
-import { generateProphecy } from "./prophecy-generator";
+import { generateProphecy, ProphecyInput } from "./prophecy-generator";
 import { submitProphecy } from "./submit";
+import type { SeedDisplay } from "./seeds/types";
+import type { LiveEvent } from "./sse-server";
 
 const SEED_NAMES = ["MARKETS", "CHAIN", "WORLD", "HEAVENS", "ECHO"];
 const MONTHS_NUMERIC = [
@@ -72,9 +75,45 @@ export function printSquareBanner(ep: any): void {
   log.blank();
 }
 
+async function recentPriorProphecies(
+  ctx: ClientCtx,
+  currentEpoch: number
+): Promise<string[]> {
+  const out: string[] = [];
+  for (let i = 1; i <= 3 && currentEpoch - i >= 1; i++) {
+    const ep = currentEpoch - i;
+    try {
+      const acct: any = await (ctx.program.account as any).epochSquare.fetch(
+        epochSquarePda(ctx.programId, ep)
+      );
+      if (acct?.prophecyUri && typeof acct.prophecyUri === "string") {
+        const uri = acct.prophecyUri as string;
+        if (uri.startsWith("inline:")) {
+          try {
+            out.push(Buffer.from(uri.slice("inline:".length), "base64").toString("utf-8"));
+          } catch {
+            out.push("");
+          }
+        } else {
+          out.push("");
+        }
+      }
+    } catch {
+      // EpochSquare not found / older state; skip
+    }
+  }
+  return out.reverse(); // oldest first
+}
+
+export interface ProphecyContext {
+  seedDisplays: SeedDisplay[];
+  broadcast?: (event: LiveEvent) => void;
+}
+
 export async function respondToProphecyRequest(
   ctx: ClientCtx,
-  ep: any
+  ep: any,
+  context: ProphecyContext
 ): Promise<void> {
   const epoch = Number(ep.epoch);
   printSquareBanner(ep);
@@ -86,8 +125,26 @@ export async function respondToProphecyRequest(
     return;
   }
 
+  const glyphs: string[][] = (ep.glyphs as number[][]).map((row) =>
+    Array.from(row).map((b) => String.fromCharCode(b))
+  );
   const forward = Uint8Array.from(ep.forwardDigest);
-  const prophecy = generateProphecy({ forwardDigest: forward });
+  const backward = Uint8Array.from(ep.backwardDigest);
+  const prior = await recentPriorProphecies(ctx, epoch);
+
+  log.system(
+    `generating prophecy via Claude (forward → backward → merge)...`
+  );
+
+  const input: ProphecyInput = {
+    glyphs,
+    forwardDigest: forward,
+    backwardDigest: backward,
+    seedDisplays: context.seedDisplays,
+    priorProphecies: prior,
+  };
+  const prophecy = await generateProphecy(input);
+
   log.system("prophecy:");
   for (const line of prophecy.text.split("\n")) {
     log.data(`  ${line}`);
@@ -98,6 +155,16 @@ export async function respondToProphecyRequest(
     log.system(
       `prophecy born — hash ${shortHexHeadTail(prophecy.hash)} — tx ${sig.slice(0, 8)}...`
     );
+
+    if (context.broadcast) {
+      context.broadcast({
+        type: "prophecy",
+        epoch,
+        text: prophecy.text,
+        hash: Buffer.from(prophecy.hash).toString("hex"),
+        ts: Math.floor(Date.now() / 1000),
+      });
+    }
   } catch (e: any) {
     const s = String(e?.message ?? e);
     if (s.includes("AlreadySubmitted")) {
@@ -108,7 +175,10 @@ export async function respondToProphecyRequest(
   }
 }
 
-export function startListener(ctx: ClientCtx): number {
+export function startListener(
+  ctx: ClientCtx,
+  contextProvider: () => ProphecyContext
+): number {
   const subId = ctx.program.addEventListener(
     "ProphecyRequested" as any,
     async (event: any, slot: number, signature: string) => {
@@ -120,7 +190,7 @@ export function startListener(ctx: ClientCtx): number {
         const ep: any = await (ctx.program.account as any).epochSquare.fetch(
           epochSquarePda(ctx.programId, epoch)
         );
-        await respondToProphecyRequest(ctx, ep);
+        await respondToProphecyRequest(ctx, ep, contextProvider());
       } catch (e: any) {
         log.system(`listener error: ${e?.message ?? e}`);
       }

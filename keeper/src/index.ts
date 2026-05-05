@@ -12,19 +12,28 @@ import { fireTick } from "./tick";
 import {
   startListener,
   respondToProphecyRequest,
+  ProphecyContext,
 } from "./prophecy-listener";
-// Note: the listener subscribes to ProphecyRequested events for ticks fired
-// by other actors (e.g. the Phase 2 demo, a second keeper). For ticks the
-// keeper fires itself, we synchronously fetch and process the EpochSquare
-// in tickIfDue() — this avoids any window where the WebSocket subscription
-// hasn't connected yet and is idempotent (the listener and the inline path
-// both check ep.prophecy_submitted before doing anything).
+import { fetchAllSeeds } from "./seeds";
+import type { SeedDisplay } from "./seeds/types";
+import { SseServer } from "./sse-server";
+import type { Status } from "./types";
 
 const MIN_TICK_INTERVAL_SECS = 180;
-// Date.now() can sit 1-2s ahead of the validator's on-chain Clock.unix_timestamp.
-// Holding the keeper-side gate a few seconds longer than the on-chain check
-// avoids a no-op TickTooSoon round-trip on the first attempt of every cycle.
 const TICK_CLOCK_SKEW_GRACE_SECS = 3;
+
+// How often we re-poll real-world seed feeds while the cube is GATHERING.
+// 30s lines up with the dashboard's existing "next tick in N" cadence.
+const SEED_REFRESH_MS = 30_000;
+
+// Shared state — seeds + status updated by the keeper, read by the listener
+// and pushed to SSE clients.
+interface KeeperState {
+  status: Status;
+  epoch: number;
+  nextTickSeconds: number;
+  seeds: SeedDisplay[];
+}
 
 async function maybeInitialize(ctx: ClientCtx): Promise<void> {
   const lgPda = lookingGlassPda(ctx.programId);
@@ -42,7 +51,10 @@ async function maybeInitialize(ctx: ClientCtx): Promise<void> {
   log.system("initialized.");
 }
 
-async function recoverPendingProphecy(ctx: ClientCtx): Promise<void> {
+async function recoverPendingProphecy(
+  ctx: ClientCtx,
+  context: ProphecyContext
+): Promise<void> {
   const lgPda = lookingGlassPda(ctx.programId);
   const lg: any = await (ctx.program.account as any).lookingGlass
     .fetch(lgPda)
@@ -62,10 +74,15 @@ async function recoverPendingProphecy(ctx: ClientCtx): Promise<void> {
   log.system(
     `recovering: epoch ${epoch} EpochSquare exists but no prophecy yet, processing now.`
   );
-  await respondToProphecyRequest(ctx, ep);
+  await respondToProphecyRequest(ctx, ep, context);
 }
 
-async function tickIfDue(ctx: ClientCtx, cfg: Config): Promise<void> {
+async function tickIfDue(
+  ctx: ClientCtx,
+  cfg: Config,
+  state: KeeperState,
+  context: ProphecyContext
+): Promise<void> {
   const lgPda = lookingGlassPda(ctx.programId);
   const lg: any = await (ctx.program.account as any).lookingGlass.fetch(lgPda);
   const epoch = Number(lg.epoch);
@@ -73,24 +90,33 @@ async function tickIfDue(ctx: ClientCtx, cfg: Config): Promise<void> {
   const now = Math.floor(Date.now() / 1000);
   const elapsed = now - lastTickTs;
 
+  state.epoch = epoch;
+
   const effectiveInterval = MIN_TICK_INTERVAL_SECS + TICK_CLOCK_SKEW_GRACE_SECS;
   if (lastTickTs > 0 && elapsed < effectiveInterval && !cfg.debugFastTick) {
-    log.system(
-      `next tick in ${effectiveInterval - elapsed}s (epoch ${epoch}).`
-    );
+    state.status = "GATHERING";
+    state.nextTickSeconds = effectiveInterval - elapsed;
+    log.system(`next tick in ${state.nextTickSeconds}s (epoch ${epoch}).`);
     return;
   }
 
+  state.status = "SOLVING";
+  state.nextTickSeconds = 0;
   log.system(`firing tick: epoch ${epoch} → ${epoch + 1}.`);
   try {
     const { signature, nextEpoch } = await fireTick(ctx, epoch);
     log.system(
       `tick tx confirmed for epoch ${nextEpoch}: ${signature.slice(0, 8)}...`
     );
+    state.status = "LOCKED";
+    state.epoch = nextEpoch;
     const epPda = epochSquarePda(ctx.programId, nextEpoch);
     const ep: any = await (ctx.program.account as any).epochSquare.fetch(epPda);
-    await respondToProphecyRequest(ctx, ep);
+    state.status = "READING";
+    await respondToProphecyRequest(ctx, ep, context);
+    state.status = "GATHERING";
   } catch (e: any) {
+    state.status = "GATHERING";
     const s = String(e?.message ?? e);
     if (s.includes("TickTooSoon")) {
       log.system("tick rejected on-chain (TickTooSoon); will retry next loop.");
@@ -100,8 +126,45 @@ async function tickIfDue(ctx: ClientCtx, cfg: Config): Promise<void> {
   }
 }
 
+async function refreshSeeds(
+  ctx: ClientCtx,
+  cfg: Config,
+  state: KeeperState,
+  sse: SseServer
+): Promise<void> {
+  try {
+    state.seeds = await fetchAllSeeds(ctx, cfg.metricsRpcUrl);
+    sse.broadcast({
+      type: "seeds",
+      seeds: state.seeds,
+      ts: Math.floor(Date.now() / 1000),
+    });
+    const faults = state.seeds.filter((s) => s.fault).map((s) => s.category);
+    if (faults.length > 0) {
+      log.system(`seed fetch faults: ${faults.join(", ")}`);
+    }
+  } catch (e) {
+    log.system(`seed refresh error: ${(e as Error)?.message ?? e}`);
+  }
+}
+
+function broadcastStatus(state: KeeperState, sse: SseServer): void {
+  sse.broadcast({
+    type: "status",
+    status: state.status,
+    epoch: state.epoch,
+    nextTickSeconds: state.nextTickSeconds,
+    ts: Math.floor(Date.now() / 1000),
+  });
+}
+
 async function main(): Promise<void> {
   const cfg = loadConfig();
+  if (!cfg.anthropicApiKey) {
+    log.system(
+      "warning: ANTHROPIC_API_KEY not set — every prophecy will fall back to the template generator."
+    );
+  }
   const keeperKp = loadKeypair(cfg.keeperKeypairPath);
   const oracleKp = loadKeypair(cfg.oracleKeypairPath);
   const ctx = buildClient({
@@ -117,41 +180,72 @@ async function main(): Promise<void> {
   const lgPda = lookingGlassPda(ctx.programId);
   const lg: any = await (ctx.program.account as any).lookingGlass.fetch(lgPda);
 
+  const state: KeeperState = {
+    status: "GATHERING",
+    epoch: Number(lg.epoch),
+    nextTickSeconds: MIN_TICK_INTERVAL_SECS,
+    seeds: [],
+  };
+
+  const sse = new SseServer();
+  sse.start(cfg.ssePort);
   log.rule();
   log.data("looking glass keeper online");
   log.data(`program  ${ctx.programId.toBase58()}`);
-  log.data(`epoch    ${Number(lg.epoch)}`);
+  log.data(`epoch    ${state.epoch}`);
   log.data(`keeper   ${ctx.keeper.publicKey.toBase58()}`);
   log.data(`oracle   ${ctx.oracle.publicKey.toBase58()}`);
   log.data(`rpc      ${cfg.rpcUrl}`);
+  log.data(`metrics  ${cfg.metricsRpcUrl}`);
   log.data(`ws       ${cfg.wsUrl}`);
+  log.data(`sse      http://localhost:${cfg.ssePort}/events`);
   if (cfg.debugFastTick) {
     log.data("DEBUG_FAST_TICK is on (keeper-side gate disabled).");
   }
   log.rule();
 
-  const subId = startListener(ctx);
+  const contextProvider = (): ProphecyContext => ({
+    seedDisplays: state.seeds,
+    broadcast: (ev) => sse.broadcast(ev),
+  });
+
+  // Seed the initial display before any tick / event handler can ask for it.
+  await refreshSeeds(ctx, cfg, state, sse);
+
+  const subId = startListener(ctx, contextProvider);
   log.system(
     `subscribed to ProphecyRequested events (subscription ${subId}).`
   );
 
-  await recoverPendingProphecy(ctx);
+  await recoverPendingProphecy(ctx, contextProvider());
 
   log.system(
     `tick scheduler running every ${cfg.tickIntervalMs}ms (on-chain interval ${MIN_TICK_INTERVAL_SECS}s).`
   );
+  log.system(`seed refresh running every ${SEED_REFRESH_MS}ms.`);
 
-  const intervalHandle = setInterval(() => {
-    tickIfDue(ctx, cfg).catch((e) => {
+  const tickHandle = setInterval(() => {
+    tickIfDue(ctx, cfg, state, contextProvider()).catch((e) => {
       log.system(`scheduler iteration error: ${e?.message ?? e}`);
     });
+    broadcastStatus(state, sse);
   }, cfg.tickIntervalMs);
 
-  await tickIfDue(ctx, cfg);
+  const seedHandle = setInterval(() => {
+    refreshSeeds(ctx, cfg, state, sse).catch((e) => {
+      log.system(`seed iteration error: ${e?.message ?? e}`);
+    });
+  }, SEED_REFRESH_MS);
+
+  // Initial tick attempt
+  await tickIfDue(ctx, cfg, state, contextProvider());
+  broadcastStatus(state, sse);
 
   const shutdown = async (sig: string) => {
     log.system(`received ${sig}; shutting down keeper.`);
-    clearInterval(intervalHandle);
+    clearInterval(tickHandle);
+    clearInterval(seedHandle);
+    sse.stop();
     try {
       await ctx.program.removeEventListener(subId);
     } catch {}

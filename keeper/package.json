@@ -11,8 +11,10 @@
     "start:built": "node dist/index.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.91.1",
     "@coral-xyz/anchor": "^0.32.1",
     "@solana/web3.js": "^1.98.4",
+    "astronomy-engine": "^2.1.19",
     "dotenv": "^16.4.5",
     "js-sha3": "^0.9.3"
   },

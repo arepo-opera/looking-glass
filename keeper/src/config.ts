@@ -11,6 +11,12 @@ export interface Config {
   tickIntervalMs: number;
   programId: string;
   debugFastTick: boolean;
+  ssePort: number;
+  // The Helius URL is what we use to fetch real chain metrics (the Solana
+  // public RPC throttles getRecentPerformanceSamples). Falls back to rpcUrl
+  // when not configured (e.g. on localnet).
+  metricsRpcUrl: string;
+  anthropicApiKey: string | undefined;
 }
 
 function required(name: string): string {
@@ -36,5 +42,8 @@ export function loadConfig(): Config {
     tickIntervalMs,
     programId: required("PROGRAM_ID"),
     debugFastTick: process.env.DEBUG_FAST_TICK === "1",
+    ssePort: Number(process.env.SSE_PORT ?? "7777"),
+    metricsRpcUrl: process.env.HELIUS_RPC_URL ?? rpcUrl,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   };
 }

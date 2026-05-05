@@ -1,0 +1,60 @@
+
+> keeper@0.1.0 start /Users/michaelschreiber/sator-looking-glass/keeper
+> tsx src/index.ts
+
+05MAY26 22:11:42UTC  LookingGlass PDA not found; calling initialize...
+05MAY26 22:11:42UTC  initialized.
+════════════════════════════════════════════
+05MAY26 22:11:42UTC  looking glass keeper online
+05MAY26 22:11:42UTC  program  GTEVyfq7zL91k1zjZrJCmkeidBvgDfMdEXUUsMcQWq5r
+05MAY26 22:11:42UTC  epoch    0
+05MAY26 22:11:42UTC  keeper   HK8dtYhsdrsM9QKPjBGbNcepQgRoegyz8cysVUy32JZM
+05MAY26 22:11:42UTC  oracle   HK8dtYhsdrsM9QKPjBGbNcepQgRoegyz8cysVUy32JZM
+05MAY26 22:11:42UTC  rpc      http://127.0.0.1:8899
+05MAY26 22:11:42UTC  metrics  https://mainnet.helius-rpc.com/?api-key=817f5b91-79cb-4676-bc34-004513db5847
+05MAY26 22:11:42UTC  ws       ws://127.0.0.1:8900
+05MAY26 22:11:42UTC  sse      http://localhost:7777/events
+════════════════════════════════════════════
+05MAY26 22:11:45UTC  seed fetch faults: WORLD
+05MAY26 22:11:45UTC  subscribed to ProphecyRequested events (subscription 0).
+05MAY26 22:11:45UTC  tick scheduler running every 30000ms (on-chain interval 180s).
+05MAY26 22:11:45UTC  seed refresh running every 30000ms.
+05MAY26 22:11:45UTC  firing tick: epoch 0 → 1.
+05MAY26 22:11:45UTC  tick tx confirmed for epoch 1: 5BTonz1L...
+
+════════════════════════════════════════════
+05MAY26 22:11:45UTC  EPOCH 0001    LOCKED 2026-05-05 22:11:44 UTC
+05MAY26 22:11:45UTC  NONCE 00000000
+════════════════════════════════════════════
+
+05MAY26 22:11:45UTC    D   N   H   D   I
+05MAY26 22:11:45UTC    I   N   H   P   N
+05MAY26 22:11:45UTC    T   A   H   A   T
+05MAY26 22:11:45UTC    N   P   H   N   I
+05MAY26 22:11:45UTC    I   D   H   N   D
+
+════════════════════════════════════════════
+05MAY26 22:11:45UTC  FORWARD  : d29c8bd3...629a8011
+05MAY26 22:11:45UTC  BACKWARD : e8fa42c9...270134c0
+05MAY26 22:11:45UTC  SEEDS:
+05MAY26 22:11:45UTC    MARKETS  e96c45b5...
+05MAY26 22:11:45UTC    CHAIN    907e52d0...
+05MAY26 22:11:45UTC    WORLD    612cc120...
+05MAY26 22:11:45UTC    HEAVENS  13623400...
+05MAY26 22:11:45UTC    ECHO     01303b43...
+════════════════════════════════════════════
+
+05MAY26 22:11:45UTC  generating prophecy via Claude (forward → backward → merge)...
+05MAY26 22:11:51UTC  forward reading: The stalled tongue of the world has become a sealed chamber, and within it the central pillar HHHHH stands like a spine of held breath—markets levitate, chain hums at three thousand throughputs, yet no event, no tone, no tag escapes the membrane. The mirrored gates DNHDI and IDHND lock the same key from both ends: when the silence breaks, it breaks inward, and the recursion that now reads zero will wake counting backward through every transaction it pretended not to witness.
+05MAY26 22:11:55UTC  backward reading: The echo lay flat against the drift while whales moved six times through a stale tone, and the moon at sixty-three hundredths watched a sun already flared B-nine. What you call coming was the residue we read: numbers holding still, a world unrefreshed, a recursion that never began.
+05MAY26 22:12:00UTC  prophecy text exceeded 256-byte URI ceiling; truncated to fit. full text follows on next line:
+05MAY26 22:12:00UTC  The chamber is sealed and was always sealed; the breath held at the spine is the same breath that already flared and faded against a moon at sixty-three hundredths. When the inward break arrives, it will arrive as accounting — every untagged transaction, every unrefreshed tick, every whale-pass through the stale tone summed at once and assigned. The recursion that reads zero is not waiting to begin and is not finished beginning; it is the silence between two identical keys, and the count it wakes into runs in both directions from the same closed mouth.
+05MAY26 22:12:00UTC  prophecy:
+05MAY26 22:12:00UTC     two identical keys, and the count it wakes into runs in both directions from the same closed mouth.
+05MAY26 22:12:00UTC  prophecy born — hash ab228054...bcf91da2 — tx 4uLPMhsY...
+05MAY26 22:12:15UTC  next tick in 152s (epoch 1).
+05MAY26 22:12:19UTC  seed fetch faults: WORLD
+05MAY26 22:12:45UTC  next tick in 122s (epoch 1).
+05MAY26 22:12:48UTC  seed fetch faults: WORLD
+05MAY26 22:13:15UTC  next tick in 92s (epoch 1).
+05MAY26 22:13:16UTC  seed fetch faults: WORLD
