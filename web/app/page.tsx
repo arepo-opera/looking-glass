@@ -2,7 +2,7 @@
 import { useMockOracle } from "@/lib/mock-events";
 import { TopBar } from "@/components/TopBar";
 import { SeedStream } from "@/components/SeedStream";
-import { SatorSquare2D } from "@/components/SatorSquare2D";
+import { SatorSquare3D } from "@/components/SatorSquare3D";
 import { ProphecyLog } from "@/components/ProphecyLog";
 import { BottomBar } from "@/components/BottomBar";
 
@@ -21,7 +21,7 @@ export default function Page() {
           <SeedStream seeds={o.seeds} />
         </aside>
         <section className="w-1/2 border-r border-phosphor-dim min-w-0">
-          <SatorSquare2D glyphs={o.glyphs} />
+          <SatorSquare3D glyphs={o.glyphs} status={o.status} />
         </section>
         <aside className="w-1/4 min-w-0">
           <ProphecyLog prophecies={o.prophecies} />
