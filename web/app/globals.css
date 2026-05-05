@@ -2,24 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
+html {
+  background-color: #0a0908;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 body {
   background-color: #0a0908;
   color: #d4a574;
   margin: 0;
   padding: 0;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
+  min-height: 100%;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  overflow-x: hidden;
 }
 
 ::selection {
   background: #7a5f3f;
   color: #0a0908;
+}
+
+/* Redaction blocks: U+2588 full-block glyphs rendered in phosphor-dim,
+   line-height 1 so they sit slightly taller than the surrounding text
+   (the way ink hand-redactions overlap typed letters). The svg-noise
+   overlay scuffs them up a touch so they don't read as Photoshop rects. */
+.redaction {
+  color: #7a5f3f;
+  line-height: 1;
+  display: inline-block;
+  position: relative;
+  vertical-align: baseline;
+}
+.redaction::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/textures/redaction-noise.svg");
+  background-size: 32px 32px;
+  opacity: 0.35;
+  pointer-events: none;
+  mix-blend-mode: multiply;
 }

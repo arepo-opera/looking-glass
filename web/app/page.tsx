@@ -8,6 +8,7 @@ import { SatorSquare3D } from "@/components/SatorSquare3D";
 import { ProphecyLog } from "@/components/ProphecyLog";
 import { BottomBar } from "@/components/BottomBar";
 import { CRTOverlay } from "@/components/effects/CRTOverlay";
+import { LoreDocument } from "@/components/LoreDocument";
 
 function Dashboard() {
   const o = useMockOracle();
@@ -17,7 +18,7 @@ function Dashboard() {
 
   return (
     <>
-      <div className="h-screen w-screen flex flex-col overflow-hidden">
+      <div className="h-screen w-screen flex flex-col">
         <TopBar
           status={o.status}
           epoch={o.epoch}
@@ -45,6 +46,7 @@ function Dashboard() {
           rpcOk={o.rpcOk}
         />
       </div>
+      <LoreDocument />
       <CRTOverlay enabled={effectsEnabled} forceFlicker={forceFlicker} />
     </>
   );
