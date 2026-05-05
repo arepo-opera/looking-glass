@@ -351,15 +351,17 @@ function Slab({ position, frontTexture, backTexture }: SlabProps) {
   );
 }
 
+// Small "indicator" arrow — the spec wants the bottom group to occupy
+// roughly the bottom 8-10% of the visible region, not feature-prominence.
 const arrowShape = (() => {
   const s = new THREE.Shape();
-  s.moveTo(-0.4, -0.08);
-  s.lineTo(0.16, -0.08);
-  s.lineTo(0.16, -0.20);
-  s.lineTo(0.45, 0);
-  s.lineTo(0.16, 0.20);
-  s.lineTo(0.16, 0.08);
-  s.lineTo(-0.4, 0.08);
+  s.moveTo(-0.22, -0.04);
+  s.lineTo(0.08, -0.04);
+  s.lineTo(0.08, -0.10);
+  s.lineTo(0.22, 0);
+  s.lineTo(0.08, 0.10);
+  s.lineTo(0.08, 0.04);
+  s.lineTo(-0.22, 0.04);
   s.closePath();
   return s;
 })();
@@ -396,28 +398,28 @@ function ReadingArrows() {
     },
     [forwardTex, backwardTex]
   );
-  // canvas is 512×96, aspect 5.33; pick a plane height around the
-  // section-label scale (~10px ≈ 0.18 units in this scene).
-  const labelH = 0.18;
+  // Label canvas is 512×96 (aspect ~5.33); plane height matches the
+  // 10px section-label scale, so labelH ≈ 0.10 units in this scene.
+  const labelH = 0.10;
   const labelW = labelH * (512 / 96);
   return (
     <group position={[0, -2.85, 0]}>
-      <group position={[1.3, 0, 0]}>
+      <group position={[0.85, 0, 0]}>
         <mesh>
-          <extrudeGeometry args={[arrowShape, { depth: 0.06, bevelEnabled: false }]} />
+          <extrudeGeometry args={[arrowShape, { depth: 0.04, bevelEnabled: false }]} />
           <meshBasicMaterial color={PHOSPHOR_DIM} toneMapped={false} />
         </mesh>
-        <mesh position={[0, -0.32, 0]}>
+        <mesh position={[0, -0.14, 0]}>
           <planeGeometry args={[labelW, labelH]} />
           <meshBasicMaterial map={forwardTex} transparent toneMapped={false} />
         </mesh>
       </group>
-      <group position={[-1.3, 0, 0]}>
+      <group position={[-0.85, 0, 0]}>
         <mesh rotation={[0, 0, Math.PI]}>
-          <extrudeGeometry args={[arrowShape, { depth: 0.06, bevelEnabled: false }]} />
+          <extrudeGeometry args={[arrowShape, { depth: 0.04, bevelEnabled: false }]} />
           <meshBasicMaterial color={PHOSPHOR_DIM} toneMapped={false} />
         </mesh>
-        <mesh position={[0, -0.32, 0]}>
+        <mesh position={[0, -0.14, 0]}>
           <planeGeometry args={[labelW, labelH]} />
           <meshBasicMaterial map={backwardTex} transparent toneMapped={false} />
         </mesh>
