@@ -7,8 +7,9 @@
   "scripts": {
     "build:program": "anchor build",
     "test:program": "anchor test",
-    "lint": "prettier \"programs/looking_glass/tests/**/*.ts\" --check",
-    "lint:fix": "prettier \"programs/looking_glass/tests/**/*.ts\" -w"
+    "demo": "tsx scripts/demo-tick.ts",
+    "lint": "prettier \"programs/looking_glass/tests/**/*.ts\" \"scripts/**/*.ts\" --check",
+    "lint:fix": "prettier \"programs/looking_glass/tests/**/*.ts\" \"scripts/**/*.ts\" -w"
   },
   "engines": {
     "node": ">=20"
@@ -29,6 +30,7 @@
     "prettier": "^3.0.0",
     "solana-bankrun": "^0.4.0",
     "ts-mocha": "^10.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.3"
   }
 }
