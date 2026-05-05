@@ -1,5 +1,34 @@
 "use client";
+import { useEffect, useRef, useState } from "react";
 import type { SeedReadout } from "@/lib/mock-events";
+
+const VALUE_HALO =
+  "0 0 6px rgba(212,165,116,0.85), 0 0 12px rgba(212,165,116,0.35)";
+
+function HaloValue({ value }: { value: string }) {
+  const prevRef = useRef<string>(value);
+  const [haloOn, setHaloOn] = useState(false);
+
+  useEffect(() => {
+    if (value === prevRef.current) return;
+    prevRef.current = value;
+    setHaloOn(true);
+    const t = window.setTimeout(() => setHaloOn(false), 150);
+    return () => window.clearTimeout(t);
+  }, [value]);
+
+  return (
+    <span
+      className="text-phosphor-bright tabular-nums"
+      style={{
+        textShadow: haloOn ? VALUE_HALO : "none",
+        transition: haloOn ? "none" : "text-shadow 200ms linear",
+      }}
+    >
+      {value}
+    </span>
+  );
+}
 
 export function SeedStream({ seeds }: { seeds: SeedReadout[] }) {
   return (
@@ -26,9 +55,7 @@ export function SeedStream({ seeds }: { seeds: SeedReadout[] }) {
                   <span className="text-phosphor-dim w-[80px] shrink-0">
                     {r.label}
                   </span>
-                  <span className="text-phosphor-bright tabular-nums">
-                    {r.value}
-                  </span>
+                  <HaloValue value={r.value} />
                   {r.spread && (
                     <span className="text-phosphor-dim ml-2">{r.spread}</span>
                   )}

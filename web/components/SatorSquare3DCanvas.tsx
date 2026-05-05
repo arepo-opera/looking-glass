@@ -1,7 +1,16 @@
 "use client";
 import { Canvas, useFrame } from "@react-three/fiber";
+import {
+  EffectComposer,
+  Bloom,
+  ChromaticAberration,
+  Noise,
+  Vignette,
+} from "@react-three/postprocessing";
+import { BlendFunction } from "postprocessing";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { Vector2 } from "three";
 import type { Status } from "@/lib/mock-events";
 
 const SLAB_W = 0.85;
@@ -39,13 +48,28 @@ class GlyphCanvas {
 
   draw(letter: string) {
     if (letter === this.current) return;
+    const previous = this.current;
     this.current = letter;
     const size = this.canvas.width;
+    const fontSpec = `400 ${Math.floor(size * 0.72)}px "IM Fell English SC", serif`;
     this.ctx.clearRect(0, 0, size, size);
-    this.ctx.fillStyle = PHOSPHOR_BRIGHT;
-    this.ctx.font = `400 ${Math.floor(size * 0.72)}px "IM Fell English SC", serif`;
+    this.ctx.font = fontSpec;
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "middle";
+
+    // Phosphor afterimage: render the previous letter at low opacity in a
+    // slightly desaturated amber under the new one. As draw() is called on
+    // subsequent frames the previous-of-previous becomes the new previous,
+    // so the trail only persists one frame at a time — this matches the
+    // burn-in feel without book-keeping per-canvas history.
+    if (previous && previous !== " ") {
+      this.ctx.globalAlpha = 0.32;
+      this.ctx.fillStyle = "#9b7a4f";
+      this.ctx.fillText(previous, size / 2, size / 2 + size * 0.04);
+    }
+
+    this.ctx.globalAlpha = 1.0;
+    this.ctx.fillStyle = PHOSPHOR_BRIGHT;
     this.ctx.fillText(letter, size / 2, size / 2 + size * 0.04);
     this.texture.needsUpdate = true;
   }
@@ -428,7 +452,17 @@ function ReadingArrows() {
   );
 }
 
-export function SatorSquare3DCanvas({ glyphs, status }: SceneProps) {
+interface CanvasProps extends SceneProps {
+  effectsEnabled?: boolean;
+}
+
+const chromaticOffset = new Vector2(0.0008, 0.0008);
+
+export function SatorSquare3DCanvas({
+  glyphs,
+  status,
+  effectsEnabled = true,
+}: CanvasProps) {
   return (
     <Canvas
       camera={{ position: [0, 0, 10.0], fov: 35 }}
@@ -438,6 +472,24 @@ export function SatorSquare3DCanvas({ glyphs, status }: SceneProps) {
       <directionalLight position={[-1, 1, 1]} intensity={0.18} color={PHOSPHOR_BRIGHT} />
       <directionalLight position={[1, -0.5, 0.3]} intensity={0.06} color={PHOSPHOR_BRIGHT} />
       <CubeRig glyphs={glyphs} status={status} />
+      {effectsEnabled && (
+        <EffectComposer multisampling={0}>
+          <Bloom
+            intensity={0.6}
+            luminanceThreshold={0.4}
+            luminanceSmoothing={0.2}
+            mipmapBlur
+            radius={0.7}
+          />
+          <ChromaticAberration
+            offset={chromaticOffset}
+            radialModulation={false}
+            modulationOffset={0}
+          />
+          <Noise opacity={0.06} blendFunction={BlendFunction.OVERLAY} />
+          <Vignette offset={0.5} darkness={0.45} />
+        </EffectComposer>
+      )}
     </Canvas>
   );
 }

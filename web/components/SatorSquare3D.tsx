@@ -12,9 +12,11 @@ const Canvas3D = dynamic(
 export function SatorSquare3D({
   glyphs,
   status,
+  effectsEnabled = true,
 }: {
   glyphs: string[][];
   status: Status;
+  effectsEnabled?: boolean;
 }) {
   return (
     <div className="h-full w-full flex flex-col min-w-0">
@@ -22,7 +24,7 @@ export function SatorSquare3D({
         THE.SQUARE
       </div>
       <div className="flex-1 min-h-0">
-        <Canvas3D glyphs={glyphs} status={status} />
+        <Canvas3D glyphs={glyphs} status={status} effectsEnabled={effectsEnabled} />
       </div>
     </div>
   );
