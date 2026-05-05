@@ -13,15 +13,12 @@ export function StatusPill({ status }: { status: Status }) {
     }
   }, [status]);
 
-  const color = flashRed
-    ? "text-warning-red border-warning-red"
-    : "text-phosphor-bright border-phosphor-dim";
-
   return (
-    <div
-      className={`text-[12px] font-mono uppercase border px-2 leading-[22px] ${color}`}
-    >
-      <span className="text-phosphor-dim">STATUS:</span> {status}
+    <div className="text-[12px] font-mono uppercase">
+      <span className="text-phosphor-dim">STATUS:</span>{" "}
+      <span className={flashRed ? "text-warning-red" : "text-phosphor-bright"}>
+        {status}
+      </span>
     </div>
   );
 }

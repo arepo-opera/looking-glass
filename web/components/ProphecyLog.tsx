@@ -27,26 +27,26 @@ export function ProphecyLog({ prophecies }: { prophecies: Prophecy[] }) {
       </div>
       <div className="flex-1 flex flex-col mt-3 overflow-hidden">
         {prophecies.map((p, i) => {
-          const opacity = hovered === p.epoch ? 1 : Math.max(0.35, 1 - i * 0.1);
+          const opacity =
+            hovered === p.epoch ? 1 : Math.max(0.32, 1 - i * 0.11);
           return (
             <div
               key={p.epoch}
-              className="px-3 py-2"
+              className="px-3 py-3"
               style={{ opacity }}
               onMouseEnter={() => setHovered(p.epoch)}
               onMouseLeave={() =>
                 setHovered((h) => (h === p.epoch ? null : h))
               }
             >
-              <div className="text-[12px] font-mono flex justify-between">
+              <div className="text-[12px] font-mono flex justify-between mb-2">
                 <span className="text-phosphor-bright">
                   EP.{String(p.epoch).padStart(4, "0")}
                 </span>
                 <span className="text-phosphor-dim">{formatTs(p.ts)}</span>
               </div>
-              <div className="text-phosphor-dim text-[12px] my-1">─</div>
               {hovered === p.epoch ? (
-                <div className="grid grid-cols-5 gap-x-2 my-1 max-w-[160px]">
+                <div className="grid grid-cols-5 gap-x-2 max-w-[160px]">
                   {p.glyphs.flat().map((g, j) => (
                     <div
                       key={j}
@@ -57,11 +57,10 @@ export function ProphecyLog({ prophecies }: { prophecies: Prophecy[] }) {
                   ))}
                 </div>
               ) : (
-                <div className="text-[12px] font-mono text-phosphor-bright whitespace-pre-wrap">
+                <div className="text-[12px] font-mono text-phosphor-bright whitespace-pre-wrap leading-snug">
                   {p.text}
                 </div>
               )}
-              <div className="text-phosphor-dim text-[12px] mt-1">─</div>
             </div>
           );
         })}

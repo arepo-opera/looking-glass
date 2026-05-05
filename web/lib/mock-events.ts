@@ -225,9 +225,9 @@ export function useMockOracle(): OracleState {
     lockedSquareForEpoch(STARTING_EPOCH)
   );
   const [seeds, setSeeds] = useState<SeedReadout[]>(initialSeeds);
-  const [prophecies, setProphecies] = useState<Prophecy[]>(() =>
-    initialProphecies(STARTING_EPOCH, Math.floor(Date.now() / 1000) - 30)
-  );
+  // Empty on server / first client render so SSR HTML matches first hydrate.
+  // The seed log is filled in the mount effect below using Date.now().
+  const [prophecies, setProphecies] = useState<Prophecy[]>([]);
   const [nextTickSeconds, setNextTickSeconds] = useState(20);
   const [blockHeight, setBlockHeight] = useState(STARTING_BLOCK);
 
@@ -235,7 +235,12 @@ export function useMockOracle(): OracleState {
   const lastStatusRef = useRef<Status>("GATHERING");
 
   useEffect(() => {
-    if (cycleStartRef.current === null) cycleStartRef.current = Date.now();
+    if (cycleStartRef.current === null) {
+      cycleStartRef.current = Date.now();
+      setProphecies(
+        initialProphecies(STARTING_EPOCH, Math.floor(Date.now() / 1000) - 30)
+      );
+    }
 
     const tick = () => {
       const elapsed = (Date.now() - cycleStartRef.current!) / 1000;
