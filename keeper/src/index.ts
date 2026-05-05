@@ -21,6 +21,10 @@ import {
 // both check ep.prophecy_submitted before doing anything).
 
 const MIN_TICK_INTERVAL_SECS = 180;
+// Date.now() can sit 1-2s ahead of the validator's on-chain Clock.unix_timestamp.
+// Holding the keeper-side gate a few seconds longer than the on-chain check
+// avoids a no-op TickTooSoon round-trip on the first attempt of every cycle.
+const TICK_CLOCK_SKEW_GRACE_SECS = 3;
 
 async function maybeInitialize(ctx: ClientCtx): Promise<void> {
   const lgPda = lookingGlassPda(ctx.programId);
@@ -69,9 +73,10 @@ async function tickIfDue(ctx: ClientCtx, cfg: Config): Promise<void> {
   const now = Math.floor(Date.now() / 1000);
   const elapsed = now - lastTickTs;
 
-  if (lastTickTs > 0 && elapsed < MIN_TICK_INTERVAL_SECS && !cfg.debugFastTick) {
+  const effectiveInterval = MIN_TICK_INTERVAL_SECS + TICK_CLOCK_SKEW_GRACE_SECS;
+  if (lastTickTs > 0 && elapsed < effectiveInterval && !cfg.debugFastTick) {
     log.system(
-      `next tick in ${MIN_TICK_INTERVAL_SECS - elapsed}s (epoch ${epoch}).`
+      `next tick in ${effectiveInterval - elapsed}s (epoch ${epoch}).`
     );
     return;
   }
