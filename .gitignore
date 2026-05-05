@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# rust / anchor build artifacts
+target/
+.anchor/
+**/*.rs.bk
+test-ledger/
+
+# next.js
+.next/
+out/
+
+# build output
+dist/
+build/
+
+# env
+.env
+.env.*
+!.env.example
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Anchor-generated keys we do not want committed
+**/target/deploy/*-keypair.json

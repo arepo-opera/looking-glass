@@ -1,0 +1,652 @@
+{
+  "address": "GTEVyfq7zL91k1zjZrJCmkeidBvgDfMdEXUUsMcQWq5r",
+  "metadata": {
+    "name": "looking_glass",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Tenet Oracle: a self-moving Sator Square on Solana."
+  },
+  "instructions": [
+    {
+      "name": "initialize",
+      "discriminator": [
+        175,
+        175,
+        109,
+        31,
+        13,
+        152,
+        155,
+        237
+      ],
+      "accounts": [
+        {
+          "name": "looking_glass",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  111,
+                  107,
+                  105,
+                  110,
+                  103,
+                  95,
+                  103,
+                  108,
+                  97,
+                  115,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "oracle_signer",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "rotate_oracle_signer",
+      "discriminator": [
+        93,
+        64,
+        240,
+        241,
+        167,
+        239,
+        158,
+        168
+      ],
+      "accounts": [
+        {
+          "name": "looking_glass",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  111,
+                  107,
+                  105,
+                  110,
+                  103,
+                  95,
+                  103,
+                  108,
+                  97,
+                  115,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "looking_glass"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "new_signer",
+          "type": "pubkey"
+        }
+      ]
+    },
+    {
+      "name": "set_paused",
+      "discriminator": [
+        91,
+        60,
+        125,
+        192,
+        176,
+        225,
+        166,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "looking_glass",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  111,
+                  107,
+                  105,
+                  110,
+                  103,
+                  95,
+                  103,
+                  108,
+                  97,
+                  115,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "looking_glass"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "paused",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "submit_prophecy",
+      "discriminator": [
+        138,
+        2,
+        110,
+        36,
+        215,
+        105,
+        81,
+        143
+      ],
+      "accounts": [
+        {
+          "name": "looking_glass",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  111,
+                  107,
+                  105,
+                  110,
+                  103,
+                  95,
+                  103,
+                  108,
+                  97,
+                  115,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch_square",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  112,
+                  111,
+                  99,
+                  104
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "epoch"
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_signer",
+          "signer": true,
+          "relations": [
+            "looking_glass"
+          ]
+        }
+      ],
+      "args": [
+        {
+          "name": "epoch",
+          "type": "u64"
+        },
+        {
+          "name": "prophecy_uri",
+          "type": "string"
+        },
+        {
+          "name": "prophecy_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "tick",
+      "discriminator": [
+        92,
+        79,
+        44,
+        8,
+        101,
+        80,
+        63,
+        15
+      ],
+      "accounts": [
+        {
+          "name": "looking_glass",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  111,
+                  107,
+                  105,
+                  110,
+                  103,
+                  95,
+                  103,
+                  108,
+                  97,
+                  115,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "epoch_square",
+          "writable": true
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "EpochSquare",
+      "discriminator": [
+        0,
+        213,
+        28,
+        247,
+        22,
+        74,
+        229,
+        137
+      ]
+    },
+    {
+      "name": "LookingGlass",
+      "discriminator": [
+        5,
+        167,
+        128,
+        163,
+        197,
+        236,
+        54,
+        67
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "ProphecyBorn",
+      "discriminator": [
+        247,
+        49,
+        246,
+        235,
+        229,
+        210,
+        26,
+        235
+      ]
+    },
+    {
+      "name": "ProphecyRequested",
+      "discriminator": [
+        245,
+        158,
+        13,
+        240,
+        125,
+        151,
+        235,
+        180
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "TickTooSoon",
+      "msg": "Tick was called before the minimum interval elapsed."
+    },
+    {
+      "code": 6001,
+      "name": "SymmetryNotFound",
+      "msg": "Failed to find a nonce producing a symmetric square within the attempt limit."
+    },
+    {
+      "code": 6002,
+      "name": "Paused",
+      "msg": "The oracle is currently paused."
+    },
+    {
+      "code": 6003,
+      "name": "BadSigner",
+      "msg": "Signer is not the configured oracle signer."
+    },
+    {
+      "code": 6004,
+      "name": "BadAuthority",
+      "msg": "Signer is not the configured authority."
+    },
+    {
+      "code": 6005,
+      "name": "AlreadySubmitted",
+      "msg": "A prophecy has already been submitted for this epoch."
+    },
+    {
+      "code": 6006,
+      "name": "EpochMismatch",
+      "msg": "EpochSquare epoch does not match the requested epoch."
+    },
+    {
+      "code": 6007,
+      "name": "UriTooLong",
+      "msg": "Prophecy URI exceeds the maximum length."
+    }
+  ],
+  "types": [
+    {
+      "name": "EpochSquare",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "type": "u64"
+          },
+          {
+            "name": "locked_at",
+            "type": "i64"
+          },
+          {
+            "name": "seeds",
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                },
+                5
+              ]
+            }
+          },
+          {
+            "name": "glyphs",
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u8",
+                    5
+                  ]
+                },
+                5
+              ]
+            }
+          },
+          {
+            "name": "nonce",
+            "type": "u64"
+          },
+          {
+            "name": "forward_digest",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "backward_digest",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "prophecy_uri",
+            "type": "string"
+          },
+          {
+            "name": "prophecy_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "prophecy_submitted",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LookingGlass",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle_signer",
+            "type": "pubkey"
+          },
+          {
+            "name": "epoch",
+            "type": "u64"
+          },
+          {
+            "name": "last_tick_ts",
+            "type": "i64"
+          },
+          {
+            "name": "last_locked_square",
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u8",
+                    5
+                  ]
+                },
+                5
+              ]
+            }
+          },
+          {
+            "name": "last_locked_nonce",
+            "type": "u64"
+          },
+          {
+            "name": "last_prophecy_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "prophecy_ring",
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                },
+                8
+              ]
+            }
+          },
+          {
+            "name": "ring_head",
+            "type": "u8"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProphecyBorn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "type": "u64"
+          },
+          {
+            "name": "prophecy_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProphecyRequested",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "epoch",
+            "type": "u64"
+          },
+          {
+            "name": "glyphs",
+            "type": {
+              "array": [
+                {
+                  "array": [
+                    "u8",
+                    5
+                  ]
+                },
+                5
+              ]
+            }
+          },
+          {
+            "name": "forward_digest",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "backward_digest",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "locked_at",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}

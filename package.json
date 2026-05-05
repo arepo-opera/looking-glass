@@ -1,0 +1,34 @@
+{
+  "name": "sator-looking-glass",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tenet Oracle: an autonomous Solana program maintaining a self-moving Sator Square and producing bidirectional prophecies.",
+  "packageManager": "pnpm@10.33.3",
+  "scripts": {
+    "build:program": "anchor build",
+    "test:program": "anchor test",
+    "lint": "prettier \"programs/looking_glass/tests/**/*.ts\" --check",
+    "lint:fix": "prettier \"programs/looking_glass/tests/**/*.ts\" -w"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1"
+  },
+  "devDependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "@types/bn.js": "^5.1.0",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^20.0.0",
+    "anchor-bankrun": "^0.5.0",
+    "chai": "^4.3.4",
+    "js-sha3": "^0.9.3",
+    "mocha": "^10.2.0",
+    "prettier": "^3.0.0",
+    "solana-bankrun": "^0.4.0",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^5.7.3"
+  }
+}

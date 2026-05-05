@@ -1,0 +1,10 @@
+{
+  "name": "looking_glass",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Anchor program crate for the Tenet Oracle. JS test deps live at the workspace root.",
+  "scripts": {
+    "build": "anchor build",
+    "test": "anchor test"
+  }
+}
