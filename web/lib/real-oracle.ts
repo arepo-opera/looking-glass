@@ -5,17 +5,20 @@ import { AnchorProvider, Program } from "@coral-xyz/anchor";
 import idl from "../../shared/looking_glass.json";
 import type { OracleState, Prophecy, SeedReadout, Status } from "./mock-events";
 
-const MIN_TICK_INTERVAL = 180;
 const RPC_URL =
-  process.env.NEXT_PUBLIC_RPC_URL ?? "http://127.0.0.1:8899";
+  process.env.NEXT_PUBLIC_RPC_URL ?? "https://api.devnet.solana.com";
 const WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL ?? "ws://127.0.0.1:8900";
+  process.env.NEXT_PUBLIC_WS_URL ?? "wss://api.devnet.solana.com";
 const SSE_URL =
   process.env.NEXT_PUBLIC_KEEPER_SSE_URL ?? "http://localhost:7777/events";
 const PROGRAM_ID_STR =
   process.env.NEXT_PUBLIC_PROGRAM_ID ??
-  "GTEVyfq7zL91k1zjZrJCmkeidBvgDfMdEXUUsMcQWq5r";
+  "EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu";
 const PROGRAM_ID = new PublicKey(PROGRAM_ID_STR);
+
+const PROPHECY_LOG_DEPTH = 8;
+const INITIAL_PROPHECY_FETCH = 8;
+const REFETCH_INTERVAL_MS = 60_000; // belt-and-suspenders periodic refetch
 
 const READ_ONLY_WALLET = {
   publicKey: PublicKey.default,
@@ -48,6 +51,12 @@ function decodeUri(uri: string): string {
   }
 }
 
+function glyphsFromAccount(sq: any): string[][] {
+  return (sq.glyphs as number[][]).map((row) =>
+    Array.from(row).map((b) => String.fromCharCode(b))
+  );
+}
+
 interface SeedsEvent {
   type: "seeds";
   seeds: SeedReadout[];
@@ -69,9 +78,6 @@ interface ProphecyEvent {
 }
 type LiveEvent = SeedsEvent | StatusEvent | ProphecyEvent;
 
-const STARTING_BLOCK = 0;
-const PROGRAM_ID_DISPLAY = PROGRAM_ID_STR;
-
 export function useRealOracle(): OracleState {
   const [status, setStatus] = useState<Status>("GATHERING");
   const [epoch, setEpoch] = useState(0);
@@ -80,13 +86,21 @@ export function useRealOracle(): OracleState {
     Array.from({ length: 5 }, () => Array(5).fill(" "))
   );
   const [prophecies, setProphecies] = useState<Prophecy[]>([]);
-  const [nextTickSeconds, setNextTickSeconds] = useState(MIN_TICK_INTERVAL);
-  const [blockHeight, setBlockHeight] = useState(STARTING_BLOCK);
+  const [nextTickSeconds, setNextTickSeconds] = useState(180);
+  const [blockHeight, setBlockHeight] = useState(0);
   const [rpcOk, setRpcOk] = useState(true);
+
   const programRef = useRef<Program | null>(null);
   const connectionRef = useRef<Connection | null>(null);
+  // Tracks (deadline_ms, value_at_sync) so the local 1Hz ticker can derive
+  // the displayed countdown without waiting for the next SSE update.
+  const tickDeadlineRef = useRef<number | null>(null);
+  // Re-entry guard for fetchEpochSquare so an SSE storm can't fan out into
+  // a cascade of in-flight RPCs against the same epoch.
+  const epochInFlightRef = useRef<number | null>(null);
+  const lastFetchedEpochRef = useRef<number>(0);
 
-  // Build anchor client + initial state pull
+  // Build anchor client
   useEffect(() => {
     const connection = new Connection(RPC_URL, {
       commitment: "confirmed",
@@ -96,122 +110,133 @@ export function useRealOracle(): OracleState {
     const provider = new AnchorProvider(connection, READ_ONLY_WALLET, {
       commitment: "confirmed",
     });
-    const program = new Program(idl as any, provider);
-    programRef.current = program;
-
-    const lgPda = lookingGlassPda();
-
-    let cancelled = false;
-
-    async function loadInitial() {
-      try {
-        const lg: any = await (program.account as any).lookingGlass.fetch(lgPda);
-        if (cancelled) return;
-        const ep = Number(lg.epoch);
-        setEpoch(ep);
-        if (ep > 0) {
-          // grid from latest locked EpochSquare
-          try {
-            const sq: any = await (program.account as any).epochSquare.fetch(
-              epochSquarePda(ep)
-            );
-            if (!cancelled) {
-              setGlyphs(
-                (sq.glyphs as number[][]).map((row) =>
-                  Array.from(row).map((b) => String.fromCharCode(b))
-                )
-              );
-            }
-          } catch {}
-          // walk backwards through the ring for the prophecy log
-          const log: Prophecy[] = [];
-          for (let i = 0; i < 8 && ep - i >= 1; i++) {
-            const target = ep - i;
-            try {
-              const sq: any = await (program.account as any).epochSquare.fetch(
-                epochSquarePda(target)
-              );
-              const text = decodeUri(sq.prophecyUri ?? "");
-              if (!text) continue;
-              log.push({
-                epoch: target,
-                ts: Number(sq.lockedAt),
-                text,
-                glyphs: (sq.glyphs as number[][]).map((row) =>
-                  Array.from(row).map((b) => String.fromCharCode(b))
-                ),
-              });
-            } catch {
-              // missing epoch
-            }
-          }
-          if (!cancelled) setProphecies(log);
-        }
-        setRpcOk(true);
-      } catch (e) {
-        setRpcOk(false);
-      }
-    }
-    loadInitial();
-
-    // Subscribe to ProphecyRequested → update glyphs immediately when a new
-    // square is locked, even before the keeper SSE catches up.
-    const requestedSub = program.addEventListener(
-      "ProphecyRequested" as any,
-      async (event: any) => {
-        const ev = Number(event.epoch);
-        try {
-          const sq: any = await (program.account as any).epochSquare.fetch(
-            epochSquarePda(ev)
-          );
-          setEpoch(ev);
-          setGlyphs(
-            (sq.glyphs as number[][]).map((row) =>
-              Array.from(row).map((b) => String.fromCharCode(b))
-            )
-          );
-        } catch {}
-      }
-    );
-    const bornSub = program.addEventListener(
-      "ProphecyBorn" as any,
-      async (event: any) => {
-        const ev = Number(event.epoch);
-        try {
-          const sq: any = await (program.account as any).epochSquare.fetch(
-            epochSquarePda(ev)
-          );
-          const text = decodeUri(sq.prophecyUri ?? "");
-          if (!text) return;
-          setProphecies((p) =>
-            [
-              {
-                epoch: ev,
-                ts: Number(sq.lockedAt),
-                text,
-                glyphs: (sq.glyphs as number[][]).map((row) =>
-                  Array.from(row).map((b) => String.fromCharCode(b))
-                ),
-              },
-              ...p.filter((q) => q.epoch !== ev),
-            ].slice(0, 8)
-          );
-        } catch {}
-      }
-    );
-
-    return () => {
-      cancelled = true;
-      try {
-        program.removeEventListener(requestedSub);
-        program.removeEventListener(bornSub);
-      } catch {}
-    };
-    // mount-only
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    programRef.current = new Program(idl as any, provider);
+    // eslint-disable-next-line no-console
+    console.info(`[lg] anchor client ready, rpc=${RPC_URL}`);
   }, []);
 
-  // SSE: keeper-driven seed displays + status updates
+  // ---------- on-chain fetches -------------------------------------------
+
+  async function fetchEpochSquare(ep: number): Promise<{
+    epoch: number;
+    ts: number;
+    glyphs: string[][];
+    text: string;
+  } | null> {
+    const program = programRef.current;
+    if (!program || ep <= 0) return null;
+    if (epochInFlightRef.current === ep) return null;
+    epochInFlightRef.current = ep;
+    try {
+      const sq: any = await (program.account as any).epochSquare.fetch(
+        epochSquarePda(ep)
+      );
+      const text = decodeUri(sq.prophecyUri ?? "");
+      return {
+        epoch: ep,
+        ts: Number(sq.lockedAt),
+        glyphs: glyphsFromAccount(sq),
+        text,
+      };
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn(`[lg] failed to fetch epoch ${ep}`, (e as Error)?.message ?? e);
+      return null;
+    } finally {
+      if (epochInFlightRef.current === ep) epochInFlightRef.current = null;
+    }
+  }
+
+  async function pullEpoch(ep: number, opts: { setGlyphs: boolean }): Promise<void> {
+    const result = await fetchEpochSquare(ep);
+    if (!result) return;
+    if (opts.setGlyphs) setGlyphs(result.glyphs);
+    if (result.text) {
+      setProphecies((p) => {
+        const filtered = p.filter((q) => q.epoch !== result.epoch);
+        return [
+          {
+            epoch: result.epoch,
+            ts: result.ts,
+            text: result.text,
+            glyphs: result.glyphs,
+          },
+          ...filtered,
+        ].slice(0, PROPHECY_LOG_DEPTH);
+      });
+    }
+    lastFetchedEpochRef.current = Math.max(lastFetchedEpochRef.current, ep);
+  }
+
+  async function hydrateFromChain(): Promise<void> {
+    const program = programRef.current;
+    if (!program) return;
+    try {
+      // eslint-disable-next-line no-console
+      console.info("[lg] hydrating from chain…");
+      const lg: any = await (program.account as any).lookingGlass.fetch(
+        lookingGlassPda()
+      );
+      const onChainEpoch = Number(lg.epoch);
+      const lastTickTs = Number(lg.lastTickTs);
+      setEpoch(onChainEpoch);
+      // Initialise the local countdown from the on-chain timestamp so we have
+      // an authoritative anchor even before the keeper's first SSE status.
+      if (lastTickTs > 0) {
+        const nextTickAt = (lastTickTs + 180) * 1000;
+        tickDeadlineRef.current = nextTickAt;
+        setNextTickSeconds(Math.max(0, Math.round((nextTickAt - Date.now()) / 1000)));
+      }
+      setRpcOk(true);
+
+      if (onChainEpoch > 0) {
+        // Fetch a window of recent EpochSquare PDAs in parallel.
+        const targets: number[] = [];
+        for (let i = 0; i < INITIAL_PROPHECY_FETCH && onChainEpoch - i >= 1; i++) {
+          targets.push(onChainEpoch - i);
+        }
+        const results = await Promise.all(targets.map((t) => fetchEpochSquare(t)));
+        const populated = results.filter((r): r is NonNullable<typeof r> => r !== null);
+        if (populated.length > 0) {
+          // The latest one drives the visible cube glyphs.
+          const latest = populated.find((r) => r.epoch === onChainEpoch);
+          if (latest) setGlyphs(latest.glyphs);
+          // Prophecy log: any EpochSquare that has prophecy_submitted text.
+          const log: Prophecy[] = populated
+            .filter((r) => r.text)
+            .map((r) => ({
+              epoch: r.epoch,
+              ts: r.ts,
+              text: r.text,
+              glyphs: r.glyphs,
+            }))
+            .sort((a, b) => b.epoch - a.epoch)
+            .slice(0, PROPHECY_LOG_DEPTH);
+          setProphecies(log);
+        }
+        lastFetchedEpochRef.current = onChainEpoch;
+      }
+      // eslint-disable-next-line no-console
+      console.info(`[lg] hydrated. epoch=${onChainEpoch}`);
+    } catch (e) {
+      setRpcOk(false);
+      // eslint-disable-next-line no-console
+      console.warn("[lg] hydrate failed", (e as Error)?.message ?? e);
+    }
+  }
+
+  // Hydrate on mount + every 60s as a safety net for the rare case where an
+  // SSE update is missed (network blip, server restart between status pings).
+  useEffect(() => {
+    if (!programRef.current) return;
+    hydrateFromChain();
+    const id = window.setInterval(hydrateFromChain, REFETCH_INTERVAL_MS);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [programRef.current]);
+
+  // ---------- SSE channel -------------------------------------------------
+
   useEffect(() => {
     let es: EventSource | null = null;
     let retry: ReturnType<typeof setTimeout> | null = null;
@@ -231,7 +256,7 @@ export function useRealOracle(): OracleState {
             data = JSON.parse(e.data);
           } catch (err) {
             // eslint-disable-next-line no-console
-            console.warn("[lg] SSE: bad JSON payload", err, e.data?.slice?.(0, 80));
+            console.warn("[lg] SSE: bad JSON payload", err);
             return;
           }
           switch (data.type) {
@@ -241,20 +266,36 @@ export function useRealOracle(): OracleState {
             case "status":
               setStatus(data.status);
               setEpoch(data.epoch);
+              // Reset the local countdown's deadline. The keeper's authoritative
+              // value is `nextTickSeconds` measured at `ts`; convert to an
+              // absolute wall-clock deadline so the local 1Hz ticker can derive
+              // the displayed countdown going forward.
+              tickDeadlineRef.current =
+                Date.now() + data.nextTickSeconds * 1000;
               setNextTickSeconds(data.nextTickSeconds);
+              // If the keeper just locked a new epoch, hydrate that square so
+              // the cube and prophecy log update without waiting on Anchor's
+              // websocket event subscription.
+              if (
+                data.epoch > 0 &&
+                data.epoch > lastFetchedEpochRef.current
+              ) {
+                void pullEpoch(data.epoch, { setGlyphs: true });
+              }
               break;
             case "prophecy":
-              // Duplicate of the on-chain ProphecyBorn listener; the
-              // setProphecies dedupe handles overlap.
+              if (data.epoch > 0) {
+                void pullEpoch(data.epoch, { setGlyphs: false });
+              }
               break;
             default:
               // eslint-disable-next-line no-console
               console.warn("[lg] SSE: unknown event type", (data as any)?.type);
           }
         };
-        es.onerror = (err) => {
+        es.onerror = () => {
           // eslint-disable-next-line no-console
-          console.warn("[lg] SSE error, reconnecting in 5s", err);
+          console.warn("[lg] SSE error, reconnecting in 5s");
           es?.close();
           es = null;
           retry = setTimeout(open, 5000);
@@ -273,7 +314,20 @@ export function useRealOracle(): OracleState {
     };
   }, []);
 
-  // Block height ticker (cheap heartbeat)
+  // ---------- 1Hz local countdown ----------------------------------------
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const dl = tickDeadlineRef.current;
+      if (dl === null) return;
+      const remaining = Math.max(0, Math.round((dl - Date.now()) / 1000));
+      setNextTickSeconds((prev) => (prev === remaining ? prev : remaining));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // ---------- block height heartbeat -------------------------------------
+
   useEffect(() => {
     const conn = connectionRef.current;
     if (!conn) return;
@@ -295,7 +349,8 @@ export function useRealOracle(): OracleState {
       cancelled = true;
       window.clearInterval(id);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectionRef.current]);
 
   return {
     status,
@@ -304,7 +359,7 @@ export function useRealOracle(): OracleState {
     glyphs,
     prophecies,
     nextTickSeconds,
-    programId: PROGRAM_ID_DISPLAY,
+    programId: PROGRAM_ID_STR,
     blockHeight,
     rpcOk,
   };
