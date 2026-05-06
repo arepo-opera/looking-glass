@@ -218,33 +218,50 @@ export function useRealOracle(): OracleState {
 
     function open() {
       try {
+        // eslint-disable-next-line no-console
+        console.info(`[lg] opening SSE → ${SSE_URL}`);
         es = new EventSource(SSE_URL);
+        es.onopen = () => {
+          // eslint-disable-next-line no-console
+          console.info("[lg] SSE connected");
+        };
         es.onmessage = (e) => {
           let data: LiveEvent;
           try {
             data = JSON.parse(e.data);
-          } catch {
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.warn("[lg] SSE: bad JSON payload", err, e.data?.slice?.(0, 80));
             return;
           }
-          if (data.type === "seeds") {
-            setSeeds(data.seeds);
-          } else if (data.type === "status") {
-            setStatus(data.status);
-            setEpoch(data.epoch);
-            setNextTickSeconds(data.nextTickSeconds);
-          } else if (data.type === "prophecy") {
-            // Most prophecies are also delivered via the on-chain ProphecyBorn
-            // event listener; this is a faster duplicate path so the dashboard
-            // updates within ~1 RTT instead of waiting on the WS subscription.
-            // The dedupe-on-epoch in setProphecies above handles overlap.
+          switch (data.type) {
+            case "seeds":
+              setSeeds(data.seeds);
+              break;
+            case "status":
+              setStatus(data.status);
+              setEpoch(data.epoch);
+              setNextTickSeconds(data.nextTickSeconds);
+              break;
+            case "prophecy":
+              // Duplicate of the on-chain ProphecyBorn listener; the
+              // setProphecies dedupe handles overlap.
+              break;
+            default:
+              // eslint-disable-next-line no-console
+              console.warn("[lg] SSE: unknown event type", (data as any)?.type);
           }
         };
-        es.onerror = () => {
+        es.onerror = (err) => {
+          // eslint-disable-next-line no-console
+          console.warn("[lg] SSE error, reconnecting in 5s", err);
           es?.close();
           es = null;
           retry = setTimeout(open, 5000);
         };
-      } catch {
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn("[lg] SSE constructor threw, retrying in 5s", err);
         retry = setTimeout(open, 5000);
       }
     }

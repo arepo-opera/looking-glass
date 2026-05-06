@@ -12,11 +12,13 @@ import { CRTOverlay } from "@/components/effects/CRTOverlay";
 import { LoreDocument } from "@/components/LoreDocument";
 
 function MockDashboard() {
-  return <Dashboard oracle={useMockOracle()} />;
+  const oracle = useMockOracle();
+  return <Dashboard oracle={oracle} />;
 }
 
 function LiveDashboard() {
-  return <Dashboard oracle={useRealOracle()} />;
+  const oracle = useRealOracle();
+  return <Dashboard oracle={oracle} />;
 }
 
 function Dashboard({ oracle }: { oracle: OracleState }) {
