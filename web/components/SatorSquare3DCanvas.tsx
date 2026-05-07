@@ -128,18 +128,39 @@ function getStoneTexture(): THREE.CanvasTexture {
   return tex;
 }
 
+// Read the next/font-assigned family for IM Fell English SC. next/font
+// generates an obfuscated family name (e.g. __IM_Fell_English_SC_3d1acd)
+// and exposes it as the value of the --font-im-fell CSS variable on
+// document.documentElement. Canvas needs that exact name — the literal
+// "IM Fell English SC" doesn't match any loaded face and silently falls
+// back to system serif, which on macOS reads as Times-style book-letter
+// (tall, varied-height) instead of the SC variant (stocky, uniform).
+function resolveImFellFamily(): string {
+  if (typeof document === "undefined") return `"IM Fell English SC", serif`;
+  const v = getComputedStyle(document.documentElement)
+    .getPropertyValue("--font-im-fell")
+    .trim();
+  return v ? `${v}, "IM Fell English SC", serif` : `"IM Fell English SC", serif`;
+}
+
 class GlyphCanvas {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   texture: THREE.CanvasTexture;
   current: string = "";
   tint: string;
+  fontFamily: string;
 
-  constructor(size = TEXTURE_SIZE, tint: string = PHOSPHOR_BRIGHT) {
+  constructor(
+    size = TEXTURE_SIZE,
+    tint: string = PHOSPHOR_BRIGHT,
+    fontFamily: string = `"IM Fell English SC", serif`
+  ) {
     this.canvas = document.createElement("canvas");
     this.canvas.width = this.canvas.height = size;
     this.ctx = this.canvas.getContext("2d")!;
     this.tint = tint;
+    this.fontFamily = fontFamily;
     this.texture = new THREE.CanvasTexture(this.canvas);
     this.texture.colorSpace = THREE.SRGBColorSpace;
     // NearestFilter preserves the browser-rasterized serif edges as crisp
@@ -151,17 +172,27 @@ class GlyphCanvas {
     this.draw(" ");
   }
 
+  // Update the family used for subsequent draws. Forces the next draw call
+  // to repaint, since the parent invokes setFontFamily after the SC face
+  // finishes loading and the previously-stamped serif fallback needs to be
+  // replaced even if the displayed letter hasn't changed.
+  setFontFamily(family: string) {
+    if (this.fontFamily === family) return;
+    this.fontFamily = family;
+    this.current = "";
+  }
+
   draw(letter: string) {
     if (letter === this.current) return;
     this.current = letter;
     const size = this.canvas.width;
-    const fontSpec = `400 ${Math.floor(size * 0.72)}px "IM Fell English SC", serif`;
+    const fontSpec = `400 ${Math.floor(size * 0.72)}px ${this.fontFamily}`;
     this.ctx.clearRect(0, 0, size, size);
     this.ctx.font = fontSpec;
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "middle";
     this.ctx.fillStyle = this.tint;
-    // Just draw the letter. IM Fell English already has natural chisel
+    // Just draw the letter. IM Fell English SC already has natural chisel
     // irregularity in its serifs — any blur, halo, or erosion pass on top
     // smooths that detail away rather than reinforcing it.
     this.ctx.fillText(letter, size / 2, size / 2 + size * 0.04);
@@ -205,6 +236,7 @@ function CubeRig({ glyphs, status }: SceneProps) {
   );
 
   const stoneTexture = useMemo(() => getStoneTexture(), []);
+  const fontFamily = useMemo(() => resolveImFellFamily(), []);
 
   // Per-cell deterministic jitter and tint. row+column → seed → x/y/rotation
   // offsets and a slightly different amber. Computed once and reused on
@@ -234,20 +266,22 @@ function CubeRig({ glyphs, status }: SceneProps) {
       Array.from({ length: 5 }, (_, r) =>
         Array.from(
           { length: 5 },
-          (_, c) => new GlyphCanvas(TEXTURE_SIZE, cellAttrs[r][c].tint)
+          (_, c) =>
+            new GlyphCanvas(TEXTURE_SIZE, cellAttrs[r][c].tint, fontFamily)
         )
       ),
-    [cellAttrs]
+    [cellAttrs, fontFamily]
   );
   const glyphBack = useMemo(
     () =>
       Array.from({ length: 5 }, (_, r) =>
         Array.from(
           { length: 5 },
-          (_, c) => new GlyphCanvas(TEXTURE_SIZE, cellAttrs[r][c].tint)
+          (_, c) =>
+            new GlyphCanvas(TEXTURE_SIZE, cellAttrs[r][c].tint, fontFamily)
         )
       ),
-    [cellAttrs]
+    [cellAttrs, fontFamily]
   );
 
   useEffect(() => {
@@ -284,23 +318,43 @@ function CubeRig({ glyphs, status }: SceneProps) {
     },
   });
 
-  // Initial draw (front canvases) once the font is loaded.
+  // Initial draw — force-load the SC font, then stamp every front canvas.
+  // next/font's faces are lazy-loaded by default (only when a layout uses
+  // them), and the dashboard body uses JetBrains Mono, not the SC face,
+  // so document.fonts.ready alone resolves before the SC face is fetched.
+  // We have to call document.fonts.load() with the resolved family to kick
+  // the request, await it, and then stamp the canvases. Without this, the
+  // first paint shows system serif (Times-style) and only the next status
+  // transition repaints with the right face.
   useEffect(() => {
+    let cancelled = false;
     const drawAll = () => {
+      if (cancelled) return;
       for (let r = 0; r < 5; r++) {
         for (let c = 0; c < 5; c++) {
+          glyphFront[r][c].setFontFamily(fontFamily);
+          glyphBack[r][c].setFontFamily(fontFamily);
           glyphFront[r][c].draw(glyphs[r]?.[c] ?? "?");
         }
       }
     };
-    if (typeof document !== "undefined" && document.fonts?.ready) {
-      document.fonts.ready.then(drawAll);
+    const probeText = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const probeFont = `400 ${Math.floor(TEXTURE_SIZE * 0.72)}px ${fontFamily}`;
+    if (typeof document !== "undefined" && document.fonts?.load) {
+      document.fonts
+        .load(probeFont, probeText)
+        .then(() => document.fonts.ready)
+        .then(drawAll)
+        .catch(drawAll);
     } else {
       drawAll();
     }
+    return () => {
+      cancelled = true;
+    };
     // mount-only
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fontFamily]);
 
   // Status transitions
   useEffect(() => {
