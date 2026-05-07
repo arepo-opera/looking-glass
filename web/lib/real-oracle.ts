@@ -99,6 +99,14 @@ export function useRealOracle(): OracleState {
   // a cascade of in-flight RPCs against the same epoch.
   const epochInFlightRef = useRef<number | null>(null);
   const lastFetchedEpochRef = useRef<number>(0);
+  // Local LOCKED override window. The keeper broadcasts status on a 30s
+  // timer and rarely catches the brief on-chain LOCKED state, so the cube's
+  // LOCKING animation would never fire. We trigger it locally off the
+  // epoch increment instead, holding status="LOCKED" for the duration of
+  // the scramble + flash + post-lock pause and then handing back to the
+  // server's most-recent status.
+  const lockOverrideTimeoutRef = useRef<number | null>(null);
+  const pendingServerStatusRef = useRef<Status | null>(null);
 
   // Build anchor client
   useEffect(() => {
@@ -263,8 +271,7 @@ export function useRealOracle(): OracleState {
             case "seeds":
               setSeeds(data.seeds);
               break;
-            case "status":
-              setStatus(data.status);
+            case "status": {
               setEpoch(data.epoch);
               // Reset the local countdown's deadline. The keeper's authoritative
               // value is `nextTickSeconds` measured at `ts`; convert to an
@@ -273,16 +280,37 @@ export function useRealOracle(): OracleState {
               tickDeadlineRef.current =
                 Date.now() + data.nextTickSeconds * 1000;
               setNextTickSeconds(data.nextTickSeconds);
-              // If the keeper just locked a new epoch, hydrate that square so
-              // the cube and prophecy log update without waiting on Anchor's
-              // websocket event subscription.
-              if (
-                data.epoch > 0 &&
-                data.epoch > lastFetchedEpochRef.current
-              ) {
+              const epochAdvanced =
+                data.epoch > 0 && data.epoch > lastFetchedEpochRef.current;
+              if (epochAdvanced) {
+                // Hydrate the new square + drive the LOCKING animation
+                // locally. Holding status="LOCKED" for ~4.5s lets the cube's
+                // scramble/settle/flash sequence run to completion before we
+                // hand control back to the keeper's status feed.
+                setStatus("LOCKED");
+                if (lockOverrideTimeoutRef.current !== null) {
+                  window.clearTimeout(lockOverrideTimeoutRef.current);
+                }
+                pendingServerStatusRef.current =
+                  data.status === "LOCKED" ? "GATHERING" : data.status;
+                lockOverrideTimeoutRef.current = window.setTimeout(() => {
+                  const next =
+                    pendingServerStatusRef.current ?? "GATHERING";
+                  setStatus(next);
+                  pendingServerStatusRef.current = null;
+                  lockOverrideTimeoutRef.current = null;
+                }, 4500);
                 void pullEpoch(data.epoch, { setGlyphs: true });
+              } else if (lockOverrideTimeoutRef.current !== null) {
+                // Don't clobber the local LOCKED override mid-animation —
+                // remember the latest server status and apply it when the
+                // override timer expires.
+                pendingServerStatusRef.current = data.status;
+              } else {
+                setStatus(data.status);
               }
               break;
+            }
             case "prophecy":
               if (data.epoch > 0) {
                 void pullEpoch(data.epoch, { setGlyphs: false });
@@ -310,6 +338,10 @@ export function useRealOracle(): OracleState {
 
     return () => {
       if (retry) clearTimeout(retry);
+      if (lockOverrideTimeoutRef.current !== null) {
+        window.clearTimeout(lockOverrideTimeoutRef.current);
+        lockOverrideTimeoutRef.current = null;
+      }
       es?.close();
     };
   }, []);
