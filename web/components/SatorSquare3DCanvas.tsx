@@ -20,10 +20,12 @@ const SLAB_GAP = 0.30;
 const PITCH = SLAB_W + SLAB_GAP; // 1.15
 const ALPHABET = "SATOREPNVCLDIMHU";
 const TWO_PI = Math.PI * 2;
-// Lower texture resolution gives glyph edges a slight pixel-level imperfection
-// even after linear filtering — closer to a low-res scan of a stone rubbing
-// than a vector-clean serif type.
-const TEXTURE_SIZE = 256;
+// Glyph canvas resolution. We sample with NearestFilter to keep the
+// browser-rendered serif edges crisp under downsampling — that pixel-stepped
+// quality is what reads as "chiseled" rather than "anti-aliased vector."
+// 512² preserves enough source detail for IM Fell English's serifs while
+// still giving Nearest a meaningful per-fragment pick.
+const TEXTURE_SIZE = 512;
 // Position-jitter magnitude (fraction of slab width). Real Pompeii carvings
 // aren't laser-aligned; a few percent off-center per glyph reads "hand-placed."
 const POS_JITTER = 0.02;
@@ -140,17 +142,17 @@ class GlyphCanvas {
     this.tint = tint;
     this.texture = new THREE.CanvasTexture(this.canvas);
     this.texture.colorSpace = THREE.SRGBColorSpace;
-    // Disable mipmaps + anisotropy and use linear filtering on both axes —
-    // the small softness at 256² is part of the rubbing-from-stone feel.
+    // NearestFilter preserves the browser-rasterized serif edges as crisp
+    // pixel transitions when the texture is sampled at screen size —
+    // LinearFilter blurs them into a soft halo that kills the chiseled feel.
     this.texture.generateMipmaps = false;
-    this.texture.minFilter = THREE.LinearFilter;
-    this.texture.magFilter = THREE.LinearFilter;
+    this.texture.minFilter = THREE.NearestFilter;
+    this.texture.magFilter = THREE.NearestFilter;
     this.draw(" ");
   }
 
   draw(letter: string) {
     if (letter === this.current) return;
-    const previous = this.current;
     this.current = letter;
     const size = this.canvas.width;
     const fontSpec = `400 ${Math.floor(size * 0.72)}px "IM Fell English SC", serif`;
@@ -158,50 +160,11 @@ class GlyphCanvas {
     this.ctx.font = fontSpec;
     this.ctx.textAlign = "center";
     this.ctx.textBaseline = "middle";
-
-    // Phosphor afterimage: render the previous letter at low opacity in a
-    // slightly desaturated amber under the new one. As draw() is called on
-    // subsequent frames the previous-of-previous becomes the new previous,
-    // so the trail only persists one frame at a time — this matches the
-    // burn-in feel without book-keeping per-canvas history.
-    if (previous && previous !== " ") {
-      this.ctx.globalAlpha = 0.32;
-      this.ctx.fillStyle = "#9b7a4f";
-      this.ctx.fillText(previous, size / 2, size / 2 + size * 0.04);
-    }
-
-    // Soft halo via a 1-px shadow blur — keeps the silhouette legible while
-    // taking the laser-clean edge off the anti-aliased serif outline. The
-    // tint is the per-cell color so each glyph carries its own slightly
-    // different amber.
-    this.ctx.globalAlpha = 1.0;
-    this.ctx.shadowColor = this.tint;
-    this.ctx.shadowBlur = 1.4;
     this.ctx.fillStyle = this.tint;
+    // Just draw the letter. IM Fell English already has natural chisel
+    // irregularity in its serifs — any blur, halo, or erosion pass on top
+    // smooths that detail away rather than reinforcing it.
     this.ctx.fillText(letter, size / 2, size / 2 + size * 0.04);
-    this.ctx.shadowBlur = 0;
-    this.ctx.shadowColor = "transparent";
-
-    if (letter !== " ") {
-      // Edge erosion: chip transparent dots out of random positions over the
-      // glyph body so the boundary reads "weathered carving" instead of
-      // "vector character." destination-out subtracts alpha rather than
-      // painting black, so we don't muddy the color.
-      this.ctx.globalCompositeOperation = "destination-out";
-      const erosionCount = 14;
-      for (let i = 0; i < erosionCount; i++) {
-        const px = size * (0.16 + Math.random() * 0.68);
-        const py = size * (0.16 + Math.random() * 0.68);
-        const r = 1.5 + Math.random() * 2.5;
-        this.ctx.globalAlpha = 0.10 + Math.random() * 0.10;
-        this.ctx.fillStyle = "#000";
-        this.ctx.beginPath();
-        this.ctx.arc(px, py, r, 0, TWO_PI);
-        this.ctx.fill();
-      }
-      this.ctx.globalCompositeOperation = "source-over";
-      this.ctx.globalAlpha = 1.0;
-    }
     this.texture.needsUpdate = true;
   }
 
