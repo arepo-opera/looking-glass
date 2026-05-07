@@ -5,6 +5,21 @@ const GDELT_TONE =
 const GDELT_THEMES =
   "https://api.gdeltproject.org/api/v2/doc/doc?query=*&mode=themecount&format=json&timespan=15min&maxrecords=5";
 
+// GDELT rate-limits aggressively (429) and the public endpoint occasionally
+// returns 5xx. Send a polite identifying UA so we're not lumped with the
+// "anonymous bot traffic" bucket.
+const GDELT_HEADERS = {
+  "User-Agent":
+    "looking-glass-keeper/0.1 (+https://github.com/mschreiber89/sator-looking-glass)",
+  Accept: "application/json",
+};
+
+// Cache the last successful WORLD result for ~10 minutes so a transient
+// 429/5xx doesn't immediately blank the dashboard's WORLD column. The
+// fault-fallback path only kicks in when the cache has also gone cold.
+const STALE_TTL_MS = 10 * 60 * 1000;
+let lastGood: { result: SeedResult; at: number } | null = null;
+
 interface ToneBucket {
   bin: number;
   count: number;
@@ -36,8 +51,8 @@ function shortenTheme(raw: string): string {
 export async function fetchWorld(): Promise<SeedResult> {
   try {
     const [toneResp, themeResp] = await Promise.all([
-      fetch(GDELT_TONE, { signal: AbortSignal.timeout(8000) }),
-      fetch(GDELT_THEMES, { signal: AbortSignal.timeout(8000) }),
+      fetch(GDELT_TONE, { signal: AbortSignal.timeout(8000), headers: GDELT_HEADERS }),
+      fetch(GDELT_THEMES, { signal: AbortSignal.timeout(8000), headers: GDELT_HEADERS }),
     ]);
     if (!toneResp.ok) throw new Error(`gdelt-tone ${toneResp.status}`);
     if (!themeResp.ok) throw new Error(`gdelt-themes ${themeResp.status}`);
@@ -64,7 +79,7 @@ export async function fetchWorld(): Promise<SeedResult> {
       topTheme
     );
 
-    return {
+    const result: SeedResult = {
       digest,
       display: {
         channel: "03",
@@ -76,7 +91,21 @@ export async function fetchWorld(): Promise<SeedResult> {
         ],
       },
     };
+    lastGood = { result, at: Date.now() };
+    return result;
   } catch (e) {
+    // If we've fetched successfully recently, keep showing those values
+    // rather than blanking the column. Mark the display with the upstream
+    // fault so the keeper logs still reflect reality.
+    if (lastGood && Date.now() - lastGood.at < STALE_TTL_MS) {
+      return {
+        digest: lastGood.result.digest,
+        display: {
+          ...lastGood.result.display,
+          fault: `cached: ${String((e as Error)?.message ?? e)}`,
+        },
+      };
+    }
     return {
       digest: fallbackDigest("WORLD"),
       display: {

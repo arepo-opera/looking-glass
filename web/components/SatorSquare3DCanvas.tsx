@@ -207,6 +207,35 @@ function CubeRig({ glyphs, status }: SceneProps) {
     }
   }, [status, glyphs, glyphFront, glyphBack]);
 
+  // Standalone "redraw on glyphs prop change" effect. The status-transition
+  // effect above only repaints when status itself transitions — but in the
+  // live oracle, status sits at GATHERING while the on-chain hydrate fetches
+  // the locked square asynchronously. Without this, the very first render's
+  // initial " " glyphs stay on the canvas forever and the cube reads as
+  // empty stone. Skip during SOLVING / LOCKING so we don't clobber the live
+  // animation that's mid-flicker or mid-flip.
+  useEffect(() => {
+    const cs = stateRef.current.cubeState;
+    if (cs === "SOLVING" || cs === "LOCKING") return;
+    const displayed = stateRef.current.displayedGlyphs;
+    let changed = false;
+    for (let r = 0; r < 5 && !changed; r++) {
+      for (let c = 0; c < 5 && !changed; c++) {
+        if ((glyphs[r]?.[c] ?? " ") !== (displayed[r]?.[c] ?? " ")) {
+          changed = true;
+        }
+      }
+    }
+    if (!changed) return;
+    stateRef.current.displayedGlyphs = glyphs.map((row) => [...row]);
+    for (let r = 0; r < 5; r++) {
+      const visible = stateRef.current.rowFlipped[r] ? glyphBack : glyphFront;
+      for (let c = 0; c < 5; c++) {
+        visible[r][c].draw(glyphs[r]?.[c] ?? "?");
+      }
+    }
+  }, [glyphs, glyphFront, glyphBack]);
+
   useFrame(({ clock }) => {
     const now = performance.now();
     const t = clock.getElapsedTime();
