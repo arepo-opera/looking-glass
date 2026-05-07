@@ -148,7 +148,15 @@ function shortenSection(raw: string): string {
   return head.toUpperCase().slice(0, 12);
 }
 
+async function fetchOnce(url: string, timeoutMs: number) {
+  return fetch(url, {
+    signal: AbortSignal.timeout(timeoutMs),
+    headers: GUARDIAN_HEADERS,
+  });
+}
+
 export async function fetchWorld(): Promise<SeedResult> {
+  let stage = "init";
   try {
     const fromDate = new Date(Date.now() - 60 * 60 * 1000)
       .toISOString()
@@ -159,14 +167,27 @@ export async function fetchWorld(): Promise<SeedResult> {
       `&order-by=newest&page-size=50` +
       `&show-fields=headline,trailText` +
       `&from-date=${encodeURIComponent(fromDate)}`;
-    const resp = await fetch(url, {
-      signal: AbortSignal.timeout(10_000),
-      headers: GUARDIAN_HEADERS,
-    });
+
+    // First try with a 12s ceiling; on timeout/5xx, one retry with 18s.
+    // Railway's outbound network to api.theguardian.com has been slower
+    // than local from EC2 — single attempt at 10s was burning every poll.
+    stage = "fetch1";
+    let resp: Response;
+    try {
+      resp = await fetchOnce(url, 12_000);
+      if (!resp.ok && (resp.status >= 500 || resp.status === 429)) {
+        throw new Error(`guardian ${resp.status}`);
+      }
+    } catch {
+      stage = "fetch2";
+      resp = await fetchOnce(url, 18_000);
+    }
     if (!resp.ok) throw new Error(`guardian ${resp.status}`);
+    stage = "parse";
     const data = (await resp.json()) as GuardianResponse;
     const results = data.response?.results ?? [];
     if (results.length === 0) throw new Error("guardian: empty results");
+    stage = "score";
 
     // Tone: sum sentiment across all returned headlines/trail-text, divide
     // by article count, then scale into ±2 so the dashboard reads at a
@@ -212,12 +233,13 @@ export async function fetchWorld(): Promise<SeedResult> {
     lastGood = { result, at: Date.now() };
     return result;
   } catch (e) {
+    const detail = `guardian@${stage}: ${String((e as Error)?.message ?? e)}`;
     if (lastGood && Date.now() - lastGood.at < STALE_TTL_MS) {
       return {
         digest: lastGood.result.digest,
         display: {
           ...lastGood.result.display,
-          fault: `cached: ${String((e as Error)?.message ?? e)}`,
+          fault: `cached: ${detail}`,
         },
       };
     }
@@ -231,7 +253,7 @@ export async function fetchWorld(): Promise<SeedResult> {
           { label: "EVT/15M", value: "STALE" },
           { label: "TAG", value: "STALE" },
         ],
-        fault: String((e as Error)?.message ?? e),
+        fault: detail,
       },
     };
   }
