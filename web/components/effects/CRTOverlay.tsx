@@ -30,7 +30,7 @@ export function CRTOverlay({
       window.setTimeout(() => {
         if (!cancelled) setFlickerOn(false);
       }, 80);
-      const next = 20000 + Math.random() * 20000; // 20-40s
+      const next = 8000 + Math.random() * 7000; // 8-15s — signal fights harder
       window.setTimeout(flickerLoop, next);
     };
 
@@ -43,18 +43,18 @@ export function CRTOverlay({
       window.setTimeout(() => {
         if (!cancelled) setTear(null);
       }, 50);
-      const next = 180000 + Math.random() * 240000; // 3-7 min
+      const next = 60000 + Math.random() * 60000; // 60-120s — more frequent slip
       window.setTimeout(tearLoop, next);
     };
 
-    // First flicker between 4-12s after mount; first tear between 30-90s.
+    // First flicker between 3-8s after mount; first tear between 20-60s.
     const initialFlicker = window.setTimeout(
       flickerLoop,
-      4000 + Math.random() * 8000
+      3000 + Math.random() * 5000
     );
     const initialTear = window.setTimeout(
       tearLoop,
-      30000 + Math.random() * 60000
+      20000 + Math.random() * 40000
     );
 
     return () => {
