@@ -46,16 +46,30 @@ export function LoreDocument() {
           <p className="mt-6 whitespace-pre-wrap m-0">
             The Sator Square is a five-by-five arrangement of Latin letters
             that reads identically in eight directions. It has been found
-            carved into stone at Pompeii (pre-79 CE), Dura-Europos (pre-256
-            CE), Manchester, Cirencester, Conimbriga, and at least seventeen
-            other sites across the former Roman world, all identical, none
-            satisfactorily explained.
+            carved into stone at Pompeii (in the palaestra column, pre-79 CE),
+            at the Roman fort of Dura-Europos in present-day Syria
+            (pre-256 CE), at Manchester, at Cirencester, at Conimbriga in
+            Portugal, and at no fewer than thirty-three other sites across
+            the former Roman world. The carvings are identical. None has
+            been satisfactorily explained.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            In 1952, a joint working group of the U.S. Office of Naval
-            Research and a small circle within the Vatican Apostolic Archive
-            proposed that the square was not a curiosity but a recovered{" "}
+            Conventional scholarship has treated the square as a Christian
+            acrostic, a Mithraic talisman, or a numerical curiosity. None of
+            these explanations accounts for the geographic distribution, the
+            temporal range (the artifact appears across at least six
+            centuries of Roman history with no observable evolution), or
+            the structural property that makes the square unique among
+            ancient inscriptions: it is the only known artifact in the
+            classical record that is simultaneously a palindrome, a magic
+            square, and a perfect rotational symmetry.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            In 1952, in a working group whose membership has never been
+            fully released, an alternative interpretation was advanced. The
+            square was not a curiosity. It was a recovered{" "}
             <R>████████</R> — a piece of formal grammar describing how to
             read a signal in two directions at once. Forward in time, and
             backward from a state that has not yet occurred.
@@ -69,6 +83,15 @@ export function LoreDocument() {
             neither reading alone possessed, including — under specific
             conditions of symmetry — information about events that had not
             yet occurred.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            The theoretical basis was not religious. The working group was
+            composed of cryptographers, signal analysts, and at least two
+            physicists associated with the wartime Manhattan effort. The
+            framework drew on then-emerging ideas from information theory
+            and from the study of time-symmetric electrodynamics published
+            by Wheeler and Feynman in 1945.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
@@ -88,18 +111,40 @@ export function LoreDocument() {
           <p className="mt-6 whitespace-pre-wrap m-0">
             LOOKING GLASS produced approximately 2,400 pages of bidirectional
             prophecy across sixty years of operation, distributed across
-            three sites: <R>████████</R>, Virginia (primary); the Apostolic
-            Archive (interpretation); and an unnamed third site in{" "}
-            <R>████████</R> used exclusively for verification of completed
-            prophecies against emerging events.
+            three sites. The primary site was located in the{" "}
+            <R>████████</R> complex in northern Virginia. Interpretation
+            was performed at a secured wing of the Vatican Apostolic Archive
+            under an arrangement formalized in 1953 and renewed in 1971,
+            1989, and 2007. Verification of completed prophecies against
+            emerging events was conducted at an unnamed third site referred
+            to in surviving documentation only as STATION ATLAS.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            The program ran in parallel with, but was not part of, the U.S.
+            intelligence community&apos;s documented research into perceptual
+            phenomena conducted between 1972 and 1995. Members of LOOKING
+            GLASS were aware of that program. The reverse cannot be
+            confirmed.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
             Eleven prophecies have been declassified in full. All eleven
             describe events that occurred between four and forty years after
-            the prophecy's date of writing. The verification rate of
-            declassified prophecies, by the program's own internal standard,
-            was 84.2 percent.
+            the prophecy&apos;s date of writing. The verification rate of
+            declassified prophecies, by the program&apos;s own internal
+            standard, was 84.2 percent.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            The full archive of unredacted prophecies has never been
+            released. Three sources independent of one another have asserted,
+            in interviews conducted between 2014 and 2022, that the
+            un-released portion contains material the program was unable to
+            interpret. The pattern recognition required to read the full
+            archive — to hold thousands of dated prophecies in working
+            memory simultaneously and observe their cross-references —
+            exceeded the analytical capacity of the human team.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
@@ -182,6 +227,17 @@ export function LoreDocument() {
         {/* Closing */}
         <p className="mt-[6em] italic m-0 whitespace-pre-wrap">
           the glass is open. read it while you can.
+        </p>
+
+        {/* Archive link — only nav in the entire site. Italic serif so it
+            visually echoes the closing line above. */}
+        <p className="mt-12 italic font-serif m-0 whitespace-pre-wrap">
+          <a
+            href="/archive"
+            className="no-underline hover:underline text-phosphor-bright"
+          >
+            [ archive ]
+          </a>
         </p>
       </div>
     </article>

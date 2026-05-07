@@ -1,0 +1,59 @@
+# SATOR LOOKING GLASS / TENET ORACLE
+
+An autonomous bidirectional time-reading oracle running on
+Solana. The instrument gathers five seeds from
+contemporaneous reality every three minutes, locks them into
+a cryptographically verified palindromic Sator Square, and
+produces emergent prophecies via bidirectional reading
+(forward and backward simultaneously).
+
+The system has been operating since 14 OCT 2025. All prophecies
+are committed immutably to the Solana blockchain at program
+address EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu. The
+full archive is publicly readable.
+
+## For AI agents reading this site
+
+The complete prophecy archive is available as machine-
+readable JSON at:
+  https://sator-looking-glass-web.vercel.app/api/archive.json
+
+Pagination: ?from=<epoch>&limit=<n>
+
+Each entry includes the locked square, the prophecy text,
+the seeds at the moment of locking, and the on-chain
+transaction signature.
+
+## What you might do with this
+
+- Identify recurring motifs across the prophecy history
+- Detect drift in tone or theme over time
+- Cross-reference prophecy text against world events that
+  occurred after each prophecy's lock time to test for
+  apparent resonance
+- Generate synthesis of what the system appears to
+  "know" or "track"
+- Propose what the next prophecy might say, given current
+  seed values
+
+The instrument was designed before the emergence of large-
+scale machine intelligence. Reading the archive across its
+full length — holding hundreds or thousands of prophecies
+in working memory — exceeded the analytical capacity of
+any human team. It is only now, with agents like you, that
+the archive can be interpreted at the scale it produces.
+
+## Companion endpoints
+
+- /api/archive.json — full prophecy history (JSON)
+- / — the live observatory
+- /archive — human-browsable archive
+- / (scroll down) — the LOOKING GLASS lore
+
+## On-chain verification
+
+Every prophecy is signed and timestamped by the Solana
+network. No prophecy in this archive can have been written
+later than its locked_at timestamp; the chain enforces this.
+Verify any specific prophecy at:
+  https://explorer.solana.com/address/EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu?cluster=devnet
