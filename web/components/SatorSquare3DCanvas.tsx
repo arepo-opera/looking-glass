@@ -19,7 +19,53 @@ const SLAB_D = 0.18;
 const SLAB_GAP = 0.30;
 const PITCH = SLAB_W + SLAB_GAP; // 1.15
 const ALPHABET = "SATOREPNVCLDIMHU";
+// Wider scramble pool for the LOCKING reveal — Latin letters dominate the
+// look, with occasional numerals and esoteric symbols flashing through to
+// sell "machine decoding the signal in real time."
+const SCRAMBLE_LETTERS = ALPHABET;
+const SCRAMBLE_SYMBOLS = "◊◉⊕⊗▣◈†‡¶§※‰⌬⊞⊟⊠⊡.,:;";
+const SCRAMBLE_NUMERALS = "0123456789";
 const TWO_PI = Math.PI * 2;
+
+// LOCKING animation timing. Phase 1 scrambles every cell together; Phase 2
+// settles cells one at a time at independent random offsets; then a short
+// pause before the global LOCKED phosphor pulse takes over.
+const SCRAMBLE_PHASE_MS = 2000;
+const SETTLE_WINDOW_MS = 1500;
+const TUMBLE_DURATION_MS = 300;
+const TUMBLE_STEPS_MIN = 4;
+const TUMBLE_STEPS_MAX = 6;
+const FLASH_DURATION_MS = 150;
+const POST_LOCK_DELAY_MS = 250;
+const SCRAMBLE_INTERVAL_MIN = 60;
+const SCRAMBLE_INTERVAL_MAX = 80;
+// Per-frame chance a still-scrambling cell renders with one of the visual
+// glitch variants (color flicker / horizontal offset / opacity dip /
+// double-image). 25% across all variants combined.
+const GLITCH_CHANCE = 0.25;
+// Glitch tints — distinct enough to register as a single-frame anomaly.
+const GLITCH_TINT_RED = "#c43d2a";
+const GLITCH_TINT_COOL = "#b09280";
+// Brighter tint used during the per-cell flash on settlement. Slightly
+// boosted lightness over the resting amber.
+const FLASH_TINT = "#f5cf9a";
+
+function pickScrambleChar(): string {
+  const r = Math.random();
+  if (r < 0.7) {
+    return SCRAMBLE_LETTERS[
+      Math.floor(Math.random() * SCRAMBLE_LETTERS.length)
+    ];
+  }
+  if (r < 0.9) {
+    return SCRAMBLE_SYMBOLS[
+      Math.floor(Math.random() * SCRAMBLE_SYMBOLS.length)
+    ];
+  }
+  return SCRAMBLE_NUMERALS[
+    Math.floor(Math.random() * SCRAMBLE_NUMERALS.length)
+  ];
+}
 // Glyph canvas resolution. We sample with NearestFilter to keep the
 // browser-rendered serif edges crisp under downsampling — that pixel-stepped
 // quality is what reads as "chiseled" rather than "anti-aliased vector."
@@ -199,6 +245,48 @@ class GlyphCanvas {
     this.texture.needsUpdate = true;
   }
 
+  // Scramble-frame draw with optional glitch overrides. Used by LOCKING.
+  // Forces a redraw every call (sets current to "" so subsequent draw()
+  // with the same letter still repaints), since glitch state varies
+  // frame-to-frame and the regular short-circuit would freeze the look.
+  drawStyled(
+    letter: string,
+    opts: {
+      tintOverride?: string;
+      offsetXPx?: number;
+      offsetYPx?: number;
+      alpha?: number;
+      doubleImageWith?: string;
+    }
+  ) {
+    this.current = "";
+    const size = this.canvas.width;
+    const fontSpec = `400 ${Math.floor(size * 0.72)}px ${this.fontFamily}`;
+    this.ctx.clearRect(0, 0, size, size);
+    this.ctx.font = fontSpec;
+    this.ctx.textAlign = "center";
+    this.ctx.textBaseline = "middle";
+    const tint = opts.tintOverride ?? this.tint;
+    const alpha = opts.alpha ?? 1.0;
+    const ox = opts.offsetXPx ?? 0;
+    const oy = opts.offsetYPx ?? 0;
+    const baseY = size / 2 + size * 0.04;
+    if (opts.doubleImageWith) {
+      // Two glyphs offset on x — each at half-alpha so the channel reads
+      // "two parallel signals overlapping" rather than a chunky bold.
+      this.ctx.globalAlpha = alpha * 0.55;
+      this.ctx.fillStyle = tint;
+      this.ctx.fillText(opts.doubleImageWith, size / 2 - 6 + ox, baseY + oy);
+      this.ctx.fillText(letter, size / 2 + 6 + ox, baseY + oy);
+    } else {
+      this.ctx.globalAlpha = alpha;
+      this.ctx.fillStyle = tint;
+      this.ctx.fillText(letter, size / 2 + ox, baseY + oy);
+    }
+    this.ctx.globalAlpha = 1.0;
+    this.texture.needsUpdate = true;
+  }
+
   dispose() {
     this.texture.dispose();
   }
@@ -295,14 +383,34 @@ function CubeRig({ glyphs, status }: SceneProps) {
     cubeState: "GATHERING" as CubeState,
     enteredAtMs: typeof performance !== "undefined" ? performance.now() : 0,
     flickerLastMs: 0,
-    // Per-row "rest rotation" — every LOCKING bumps this by +π. We animate
-    // from rowBaseRotation to rowBaseRotation + π and then commit the bump.
+    // Per-row "rest rotation" — kept at 0 since the LOCKING flip-board was
+    // replaced by per-cell scrambling. Reads stay; writes never fire.
     rowBaseRotation: [0, 0, 0, 0, 0],
-    // false = front canvas currently visible; true = back canvas visible.
     rowFlipped: [false, false, false, false, false],
     rowSettled: [true, true, true, true, true],
     finalGlyphs: glyphs.map((row) => [...row]),
     displayedGlyphs: glyphs.map((row) => [...row]),
+    // Latest flash end-time across all 25 cells during LOCKING. Persists
+    // across frames so the LOCKED transition can wait POST_LOCK_DELAY_MS
+    // after the last cell's flash ends — without this we'd treat the
+    // first all-settled frame as the cue and fire too early.
+    lastFlashEndMs: 0,
+    // Per-cell lock state, populated when LOCKING begins. Every cell has its
+    // own scramble cadence, settle time within the window, and tumble
+    // sequence — so the reveal looks like 25 channels independently
+    // landing rather than a synchronized flip.
+    cellLock: Array.from({ length: 5 }, () =>
+      Array.from({ length: 5 }, () => ({
+        phase: "scramble" as "scramble" | "tumble" | "flash" | "settled",
+        settleAtMs: 0,
+        tumbleStartMs: 0,
+        tumbleSteps: [] as string[],
+        tumbleStepIndex: 0,
+        lastChangeMs: 0,
+        nextInterval: 70,
+        flashUntilMs: 0,
+      }))
+    ),
     // Interference burst: every 30-60s a handful of slabs briefly shift by a
     // few pixels to sell "this signal is coming over a long, lossy channel."
     // The first burst is scheduled 6-15s after mount; subsequent bursts
@@ -367,14 +475,37 @@ function CubeRig({ glyphs, status }: SceneProps) {
       stateRef.current.cubeState = "LOCKING";
       stateRef.current.enteredAtMs = now;
       stateRef.current.finalGlyphs = glyphs.map((row) => [...row]);
-      stateRef.current.rowSettled = [false, false, false, false, false];
-      // Pre-load the final glyphs onto each slab's currently-hidden face,
-      // so when the row flips 180° the camera sees the new state directly.
+      stateRef.current.lastFlashEndMs = 0;
+      // Initialise per-cell lock state. Each cell picks a settle time
+      // uniformly across the settlement window, a 4-6 step tumble
+      // sequence ending on its true glyph, and a scramble cadence in
+      // [60ms, 80ms]. The scramble loop in useFrame drives the rest.
       for (let r = 0; r < 5; r++) {
-        const targetIsBack = !stateRef.current.rowFlipped[r];
-        const target = targetIsBack ? glyphBack : glyphFront;
         for (let c = 0; c < 5; c++) {
-          target[r][c].draw(stateRef.current.finalGlyphs[r][c]);
+          const finalGlyph = stateRef.current.finalGlyphs[r]?.[c] ?? "?";
+          const stepCount =
+            TUMBLE_STEPS_MIN +
+            Math.floor(
+              Math.random() * (TUMBLE_STEPS_MAX - TUMBLE_STEPS_MIN + 1)
+            );
+          const tumbleSteps: string[] = [];
+          for (let i = 0; i < stepCount - 1; i++) {
+            tumbleSteps.push(pickScrambleChar());
+          }
+          tumbleSteps.push(finalGlyph);
+          stateRef.current.cellLock[r][c] = {
+            phase: "scramble",
+            settleAtMs: SCRAMBLE_PHASE_MS + Math.random() * SETTLE_WINDOW_MS,
+            tumbleStartMs: 0,
+            tumbleSteps,
+            tumbleStepIndex: 0,
+            lastChangeMs: now,
+            nextInterval:
+              SCRAMBLE_INTERVAL_MIN +
+              Math.random() *
+                (SCRAMBLE_INTERVAL_MAX - SCRAMBLE_INTERVAL_MIN),
+            flashUntilMs: 0,
+          };
         }
       }
     } else if (status === "READING" && cs !== "READING") {
@@ -473,36 +604,98 @@ function CubeRig({ glyphs, status }: SceneProps) {
     } else if (cs === "LOCKING") {
       sg.scale.setScalar(1.0);
       sg.rotation.y = 0;
-
-      const rowDuration = 0.7;
-      const rowStagger = 0.05;
-      let allSettled = true;
-
+      // Hold rows static — flip-board is gone, scramble runs in canvas.
       for (let r = 0; r < 5; r++) {
-        const startSec = r * rowStagger;
-        const localT = (elapsedSec - startSec) / rowDuration;
         const rg = rowRefs.current[r];
-        if (!rg) continue;
-        const base = stateRef.current.rowBaseRotation[r];
-        if (localT <= 0) {
-          rg.rotation.x = base;
-          allSettled = false;
-        } else if (localT >= 1) {
-          rg.rotation.x = base + Math.PI;
-          if (!stateRef.current.rowSettled[r]) {
-            stateRef.current.rowSettled[r] = true;
-            // Commit the +π bump and toggle which canvas is "live".
-            stateRef.current.rowBaseRotation[r] = base + Math.PI;
-            stateRef.current.rowFlipped[r] = !stateRef.current.rowFlipped[r];
+        if (rg) rg.rotation.x = stateRef.current.rowBaseRotation[r];
+      }
+
+      let allSettled = true;
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          const cell = stateRef.current.cellLock[r][c];
+          const canvas = glyphFront[r][c];
+          const finalGlyph = stateRef.current.finalGlyphs[r]?.[c] ?? "?";
+
+          if (cell.phase === "scramble") {
+            allSettled = false;
+            if (elapsedMs >= cell.settleAtMs) {
+              cell.phase = "tumble";
+              cell.tumbleStartMs = now;
+              cell.tumbleStepIndex = 0;
+              cell.lastChangeMs = now;
+              cell.nextInterval =
+                TUMBLE_DURATION_MS / cell.tumbleSteps.length;
+            } else if (now - cell.lastChangeMs >= cell.nextInterval) {
+              cell.lastChangeMs = now;
+              cell.nextInterval =
+                SCRAMBLE_INTERVAL_MIN +
+                Math.random() *
+                  (SCRAMBLE_INTERVAL_MAX - SCRAMBLE_INTERVAL_MIN);
+              const ch = pickScrambleChar();
+              if (Math.random() < GLITCH_CHANCE) {
+                const variant = Math.floor(Math.random() * 4);
+                if (variant === 0) {
+                  // Color flicker — red or cooler-amber for one frame.
+                  canvas.drawStyled(ch, {
+                    tintOverride:
+                      Math.random() < 0.5
+                        ? GLITCH_TINT_RED
+                        : GLITCH_TINT_COOL,
+                  });
+                } else if (variant === 1) {
+                  // Horizontal offset 2-4 px.
+                  const px =
+                    (Math.random() < 0.5 ? -1 : 1) *
+                    (2 + Math.random() * 2);
+                  canvas.drawStyled(ch, { offsetXPx: px });
+                } else if (variant === 2) {
+                  // Brief opacity dip.
+                  canvas.drawStyled(ch, { alpha: 0.6 });
+                } else {
+                  // Double-image overlap with another random char.
+                  canvas.drawStyled(ch, {
+                    doubleImageWith: pickScrambleChar(),
+                  });
+                }
+              } else {
+                canvas.draw(ch);
+              }
+            }
+          } else if (cell.phase === "tumble") {
+            allSettled = false;
+            if (now - cell.lastChangeMs >= cell.nextInterval) {
+              cell.lastChangeMs = now;
+              if (cell.tumbleStepIndex < cell.tumbleSteps.length) {
+                const ch = cell.tumbleSteps[cell.tumbleStepIndex];
+                cell.tumbleStepIndex += 1;
+                canvas.draw(ch);
+              }
+              if (cell.tumbleStepIndex >= cell.tumbleSteps.length) {
+                cell.phase = "flash";
+                cell.flashUntilMs = now + FLASH_DURATION_MS;
+                if (cell.flashUntilMs > stateRef.current.lastFlashEndMs) {
+                  stateRef.current.lastFlashEndMs = cell.flashUntilMs;
+                }
+                canvas.drawStyled(finalGlyph, {
+                  tintOverride: FLASH_TINT,
+                });
+              }
+            }
+          } else if (cell.phase === "flash") {
+            allSettled = false;
+            if (now >= cell.flashUntilMs) {
+              cell.phase = "settled";
+              canvas.draw(finalGlyph);
+            }
           }
-        } else {
-          const eased = servoEase(localT);
-          rg.rotation.x = base + eased * Math.PI;
-          allSettled = false;
         }
       }
 
-      if (allSettled) {
+      if (
+        allSettled &&
+        now >= stateRef.current.lastFlashEndMs + POST_LOCK_DELAY_MS
+      ) {
         stateRef.current.cubeState = "LOCKED";
         stateRef.current.enteredAtMs = now;
         stateRef.current.displayedGlyphs = stateRef.current.finalGlyphs.map(
