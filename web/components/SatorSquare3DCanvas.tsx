@@ -50,6 +50,39 @@ const GLITCH_TINT_COOL = "#b09280";
 // boosted lightness over the resting amber.
 const FLASH_TINT = "#f5cf9a";
 
+// READING-phase directional sweeps. The cube no longer rotates during
+// READING; instead, a sequence of axis-aligned highlights traverses the
+// grid like a scanner taking multiple rapid readings of the locked
+// square. Each sweep takes 5 cells × SWEEP_CELL_MS, then a short gap,
+// then the next sweep. Total duration tuned to fit the 6s status
+// override window.
+interface Sweep {
+  type: "row" | "col" | "diag" | "antidiag";
+  axis: number; // row index (for row), column index (for col), unused for diag
+  dir: 1 | -1; // 1 = forward (left/top), -1 = reverse
+}
+const SWEEP_DEFINITIONS: Sweep[] = [
+  { type: "row", axis: 0, dir: 1 },
+  { type: "row", axis: 0, dir: -1 },
+  { type: "row", axis: 2, dir: 1 },
+  { type: "row", axis: 4, dir: -1 },
+  { type: "col", axis: 0, dir: 1 },
+  { type: "col", axis: 4, dir: -1 },
+  { type: "col", axis: 2, dir: 1 },
+  { type: "diag", axis: 0, dir: 1 },
+];
+const SWEEP_CELL_MS = 120;
+const SWEEP_GAP_MS = 150;
+const SWEEP_LENGTH = 5;
+const SWEEP_DURATION_MS = SWEEP_CELL_MS * SWEEP_LENGTH; // 600
+const SWEEP_CYCLE_MS = SWEEP_DURATION_MS + SWEEP_GAP_MS; // 750
+// Subtle temperature variation per sweep direction. Viewers shouldn't
+// consciously register the shift — just feel that horizontal and
+// vertical sweeps have different characters.
+const SWEEP_TINT_HORIZONTAL = "#f5cf9a"; // warm (slightly orange)
+const SWEEP_TINT_VERTICAL = "#e8d59b"; // cool (slightly straw)
+const SWEEP_TINT_DIAG = "#eac896"; // base phosphor, brightened
+
 function pickScrambleChar(): string {
   const r = Math.random();
   if (r < 0.7) {
@@ -424,6 +457,12 @@ function CubeRig({ glyphs, status }: SceneProps) {
         Math.random() * 9000,
       affected: [] as { r: number; c: number; dx: number; dy: number }[],
     },
+    // READING-phase sweep state. lastHighlight tracks the (r,c) most
+    // recently highlighted so we can restore it to its resting tint
+    // when the sweep moves on.
+    sweep: {
+      lastHighlight: null as { r: number; c: number } | null,
+    },
   });
 
   // Initial draw — force-load the SC font, then stamp every front canvas.
@@ -511,13 +550,18 @@ function CubeRig({ glyphs, status }: SceneProps) {
     } else if (status === "READING" && cs !== "READING") {
       stateRef.current.cubeState = "READING";
       stateRef.current.enteredAtMs = now;
-      // If we arrived in READING without going through a clean LOCKING (e.g.
-      // we mounted late or status skipped past LOCKED), make sure the visible
-      // face is showing the current locked glyphs.
+      stateRef.current.sweep.lastHighlight = null;
+      // Stamp every cell with its resting glyph + per-cell tint so the
+      // sweep highlights cleanly restore on de-highlight. Also captures
+      // the case where we arrived in READING without a clean LOCKING
+      // (mount, status skipped past LOCKED, etc.).
+      stateRef.current.finalGlyphs = glyphs.map((row) => [...row]);
       for (let r = 0; r < 5; r++) {
-        const visible = stateRef.current.rowFlipped[r] ? glyphBack : glyphFront;
         for (let c = 0; c < 5; c++) {
-          visible[r][c].draw(glyphs[r]?.[c] ?? "?");
+          const g = glyphs[r]?.[c] ?? "?";
+          glyphFront[r][c].drawStyled(g, {
+            tintOverride: cellAttrs[r][c].tint,
+          });
         }
       }
     } else if (status === "GATHERING" && cs !== "GATHERING") {
@@ -544,7 +588,17 @@ function CubeRig({ glyphs, status }: SceneProps) {
   // animation that's mid-flicker or mid-flip.
   useEffect(() => {
     const cs = stateRef.current.cubeState;
-    if (cs === "SOLVING" || cs === "LOCKING") return;
+    // Skip during any active animation phase — those phases own the
+    // canvas writes (SOLVING flicker, LOCKING scramble, LOCKED flash,
+    // READING sweep highlights). Repainting from this effect during
+    // them would cancel the animation visually.
+    if (
+      cs === "SOLVING" ||
+      cs === "LOCKING" ||
+      cs === "LOCKED" ||
+      cs === "READING"
+    )
+      return;
     const displayed = stateRef.current.displayedGlyphs;
     let changed = false;
     for (let r = 0; r < 5 && !changed; r++) {
@@ -718,12 +772,67 @@ function CubeRig({ glyphs, status }: SceneProps) {
         if (rg) rg.rotation.x = stateRef.current.rowBaseRotation[r];
       }
     } else if (cs === "READING") {
-      const localT = Math.min(elapsedSec / 6, 1);
-      sg.rotation.y = localT * TWO_PI;
+      // No rotation. The cube stays static while a sequence of axis-
+      // aligned highlights traverses it like a scanner. Each sweep
+      // crosses one row/column/diagonal in SWEEP_DURATION_MS, then a
+      // SWEEP_GAP_MS pause, then the next direction.
       sg.scale.setScalar(1.0);
+      sg.rotation.y = 0;
       for (let r = 0; r < 5; r++) {
         const rg = rowRefs.current[r];
         if (rg) rg.rotation.x = stateRef.current.rowBaseRotation[r];
+      }
+
+      const sweepIndex = Math.floor(elapsedMs / SWEEP_CYCLE_MS);
+      const localMs = elapsedMs - sweepIndex * SWEEP_CYCLE_MS;
+      const sweepActive =
+        sweepIndex < SWEEP_DEFINITIONS.length && localMs < SWEEP_DURATION_MS;
+      let target: { r: number; c: number } | null = null;
+      let tint: string = SWEEP_TINT_HORIZONTAL;
+      if (sweepActive) {
+        const sweep = SWEEP_DEFINITIONS[sweepIndex];
+        const cellIdx = Math.min(
+          SWEEP_LENGTH - 1,
+          Math.floor(localMs / SWEEP_CELL_MS)
+        );
+        const stepFwd = sweep.dir > 0 ? cellIdx : SWEEP_LENGTH - 1 - cellIdx;
+        if (sweep.type === "row") {
+          target = { r: sweep.axis, c: stepFwd };
+          tint = SWEEP_TINT_HORIZONTAL;
+        } else if (sweep.type === "col") {
+          target = { r: stepFwd, c: sweep.axis };
+          tint = SWEEP_TINT_VERTICAL;
+        } else if (sweep.type === "diag") {
+          target = { r: stepFwd, c: stepFwd };
+          tint = SWEEP_TINT_DIAG;
+        } else if (sweep.type === "antidiag") {
+          target = { r: stepFwd, c: SWEEP_LENGTH - 1 - stepFwd };
+          tint = SWEEP_TINT_DIAG;
+        }
+      }
+
+      const last = stateRef.current.sweep.lastHighlight;
+      const targetSame =
+        target !== null &&
+        last !== null &&
+        target.r === last.r &&
+        target.c === last.c;
+      if (!targetSame) {
+        // Restore the previous highlight to its resting glyph at the
+        // per-cell tint, and stamp the new highlight.
+        if (last !== null) {
+          const lf = stateRef.current.finalGlyphs[last.r]?.[last.c];
+          const lc = glyphFront[last.r][last.c];
+          // Force redraw — drawStyled sets current="" so the next draw
+          // is honored even when the letter matches.
+          lc.drawStyled(lf ?? "?", { tintOverride: cellAttrs[last.r][last.c].tint });
+        }
+        if (target !== null) {
+          const tf = stateRef.current.finalGlyphs[target.r]?.[target.c];
+          const tc = glyphFront[target.r][target.c];
+          tc.drawStyled(tf ?? "?", { tintOverride: tint });
+        }
+        stateRef.current.sweep.lastHighlight = target;
       }
     }
 
@@ -805,7 +914,6 @@ function CubeRig({ glyphs, status }: SceneProps) {
         ))}
       </group>
 
-      {status === "READING" && <ReadingArrows />}
     </>
   );
 }
@@ -870,83 +978,6 @@ function Slab({
         <planeGeometry args={[SLAB_W * 0.96, SLAB_H * 0.96]} />
         <meshBasicMaterial map={backTexture} transparent toneMapped={false} />
       </mesh>
-    </group>
-  );
-}
-
-// Small "indicator" arrow — the spec wants the bottom group to occupy
-// roughly the bottom 8-10% of the visible region, not feature-prominence.
-const arrowShape = (() => {
-  const s = new THREE.Shape();
-  s.moveTo(-0.22, -0.04);
-  s.lineTo(0.08, -0.04);
-  s.lineTo(0.08, -0.10);
-  s.lineTo(0.22, 0);
-  s.lineTo(0.08, 0.10);
-  s.lineTo(0.08, 0.04);
-  s.lineTo(-0.22, 0.04);
-  s.closePath();
-  return s;
-})();
-
-function makeLabelTexture(text: string): THREE.CanvasTexture {
-  const w = 512;
-  const h = 96;
-  const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  const ctx = c.getContext("2d")!;
-  ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = PHOSPHOR_BRIGHT;
-  ctx.font = `400 56px "JetBrains Mono", monospace`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  // tracking-section: ~0.1em letter-spacing → render character-by-character
-  const chars = text.split("");
-  ctx.letterSpacing = "5px";
-  ctx.fillText(text, w / 2, h / 2);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  return tex;
-}
-
-function ReadingArrows() {
-  const forwardTex = useMemo(() => makeLabelTexture("FORWARD"), []);
-  const backwardTex = useMemo(() => makeLabelTexture("BACKWARD"), []);
-  useEffect(
-    () => () => {
-      forwardTex.dispose();
-      backwardTex.dispose();
-    },
-    [forwardTex, backwardTex]
-  );
-  // Label canvas is 512×96 (aspect ~5.33); plane height matches the
-  // 10px section-label scale, so labelH ≈ 0.10 units in this scene.
-  const labelH = 0.10;
-  const labelW = labelH * (512 / 96);
-  return (
-    <group position={[0, -2.85, 0]}>
-      <group position={[0.85, 0, 0]}>
-        <mesh>
-          <extrudeGeometry args={[arrowShape, { depth: 0.04, bevelEnabled: false }]} />
-          <meshBasicMaterial color={PHOSPHOR_DIM} toneMapped={false} />
-        </mesh>
-        <mesh position={[0, -0.14, 0]}>
-          <planeGeometry args={[labelW, labelH]} />
-          <meshBasicMaterial map={forwardTex} transparent toneMapped={false} />
-        </mesh>
-      </group>
-      <group position={[-0.85, 0, 0]}>
-        <mesh rotation={[0, 0, Math.PI]}>
-          <extrudeGeometry args={[arrowShape, { depth: 0.04, bevelEnabled: false }]} />
-          <meshBasicMaterial color={PHOSPHOR_DIM} toneMapped={false} />
-        </mesh>
-        <mesh position={[0, -0.14, 0]}>
-          <planeGeometry args={[labelW, labelH]} />
-          <meshBasicMaterial map={backwardTex} transparent toneMapped={false} />
-        </mesh>
-      </group>
     </group>
   );
 }
