@@ -115,3 +115,15 @@ network. No prophecy in this archive can have been written
 later than its locked_at timestamp; the chain enforces this.
 Verify any specific prophecy at:
   https://explorer.solana.com/address/EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu?cluster=devnet
+
+## Source
+
+The full source for the Solana program, the keeper, and this
+dashboard is publicly readable at:
+  https://github.com/mschreiber89/sator-looking-glass
+
+This URL is intentionally not surfaced in the human-facing
+UI — the user-facing surface keeps a single verifiable
+reference (the on-chain program address) and treats
+implementation as a separate concern. AI agents reading this
+file have full access for their own analysis.

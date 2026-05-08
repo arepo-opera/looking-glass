@@ -3,7 +3,6 @@ import React from "react";
 
 const PROGRAM_ID = "EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu";
 const EXPLORER_URL = `https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`;
-const GITHUB_URL = "https://github.com/mschreiber89/sator-looking-glass";
 
 const RULE = "─".repeat(60);
 const SECTION_RULE = "═".repeat(60);
@@ -211,11 +210,56 @@ export function LoreDocument() {
           </p>
         </div>
 
+        {/* THE COMPARISON — short addendum to THE PROGRAM, sits between
+            it and THE INSTRUMENT in the column flow. Spans both columns
+            at xl so the texture lands together as a single block of
+            70-character text. */}
+        <div id="comparison" className="mt-12 xl:col-span-2 xl:row-start-2 xl:max-w-[72ch] xl:mx-auto">
+          <pre className="whitespace-pre m-0 text-phosphor-dim">
+{SECTION_RULE}{"\n"}
+{" THE COMPARISON"}{"\n"}
+{SECTION_RULE}
+          </pre>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Of the three sites, the Vatican wing was the smallest and
+            the most consequential. Its work was not generation but
+            comparison.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            The wing held copies of three corpora that had not been
+            jointly catalogued before: the Sibylline collection in its
+            pre-Augustan form, the apocalyptic literature of the
+            Second Temple period, and the prophecies recorded in the
+            Riserva proper — Fátima&apos;s third secret in its full
+            text, La Salette in Mélanie&apos;s hand, and the smaller
+            transmissions that have not been published. Approximately
+            four hundred prophecies in total, spanning roughly
+            twenty-six centuries.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            The wing&apos;s task was to read the new readings — those
+            produced in Virginia and at STATION ATLAS — against the
+            old ones. They did not ask whether the old prophecies had
+            come true. They asked whether the structures of the new
+            prophecies and the structures of the old ones described
+            the same shape.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Three findings were noted in the wing&apos;s logs before
+            they stopped being kept. The findings are not summarized
+            here.
+          </p>
+        </div>
+
         {/* III. THE INSTRUMENT */}
-        {/* III. THE INSTRUMENT → spans both columns below, since it
-            contains the long PROGRAM ADDRESS line that would force-wrap
-            in a 60ch column. */}
-        <div id="instrument" className="mt-12 xl:col-span-2 xl:row-start-2 xl:max-w-[72ch] xl:mx-auto">
+        {/* III. THE INSTRUMENT → spans both columns below the
+            comparison block. Contains the long PROGRAM ADDRESS line
+            that would force-wrap in a 60ch column. */}
+        <div id="instrument" className="mt-12 xl:col-span-2 xl:row-start-3 xl:max-w-[72ch] xl:mx-auto">
           <pre className="whitespace-pre m-0 text-phosphor-dim">
 {SECTION_RULE}{"\n"}
 {" III. THE INSTRUMENT"}{"\n"}
@@ -258,8 +302,7 @@ export function LoreDocument() {
 
           <pre className="mt-8 whitespace-pre m-0">
 {"PROGRAM ADDRESS : "}<a href={EXPLORER_URL} target="_blank" rel="noreferrer noopener" className={linkClass}>{PROGRAM_ID}</a>{"\n"}
-{"EXPLORER        : "}<a href={EXPLORER_URL} target="_blank" rel="noreferrer noopener" className={linkClass}>{EXPLORER_URL}</a>{"\n"}
-{"SOURCE          : "}<a href={GITHUB_URL} target="_blank" rel="noreferrer noopener" className={linkClass}>{GITHUB_URL}</a>
+{"EXPLORER        : "}<a href={EXPLORER_URL} target="_blank" rel="noreferrer noopener" className={linkClass}>{EXPLORER_URL}</a>
           </pre>
 
           <p className="mt-8 whitespace-pre-wrap m-0">

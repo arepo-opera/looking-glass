@@ -346,16 +346,6 @@ function MethodologyBody() {
               https://explorer.solana.com/address/EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu?cluster=devnet
             </a>
             {"\n"}
-            {"  SOURCE           "}
-            <a
-              href="https://github.com/mschreiber89/sator-looking-glass"
-              target="_blank"
-              rel="noreferrer noopener"
-              className="no-underline hover:underline text-phosphor-bright break-all"
-            >
-              https://github.com/mschreiber89/sator-looking-glass
-            </a>
-            {"\n"}
             {"  ARCHIVE          "}
             <a
               href="/archive"
