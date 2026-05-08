@@ -44,59 +44,65 @@ export function LoreDocument() {
           </pre>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            The Sator Square is a five-by-five arrangement of Latin letters
-            that reads identically in eight directions. It has been found
-            carved into stone at Pompeii (in the palaestra column, pre-79 CE),
-            at the Roman fort of Dura-Europos in present-day Syria
-            (pre-256 CE), at Manchester, at Cirencester, at Conimbriga in
-            Portugal, and at no fewer than thirty-three other sites across
-            the former Roman world. The carvings are identical. None has
-            been satisfactorily explained.
+            You will already know the square. It has been waiting for you in
+            the carved column at Pompeii, in the whitewashed wall at
+            Dura-Europos, in the chapel floor at Cirencester, in the
+            thirty-three other places where it surfaces and is mistaken for
+            ornament. It does not change. It has not changed for two
+            thousand years.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            Conventional scholarship has treated the square as a Christian
-            acrostic, a Mithraic talisman, or a numerical curiosity. None of
-            these explanations accounts for the geographic distribution, the
-            temporal range (the artifact appears across at least six
-            centuries of Roman history with no observable evolution), or
-            the structural property that makes the square unique among
-            ancient inscriptions: it is the only known artifact in the
-            classical record that is simultaneously a palindrome, a magic
-            square, and a perfect rotational symmetry.
+            We do not know who first noticed that it cannot be ornament.
+            Ornament evolves. The square does not. Ornament migrates with
+            the populations that carry it. The square appears
+            simultaneously at the edges of the empire that did not yet
+            know each other existed. Ornament, finally, can be explained.
+            The square cannot.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            In 1952, in a working group whose membership has never been
-            fully released, an alternative interpretation was advanced. The
-            square was not a curiosity. It was a recovered{" "}
-            <R>████████</R> — a piece of formal grammar describing how to
-            read a signal in two directions at once. Forward in time, and
-            backward from a state that has not yet occurred.
+            What we eventually understood — what the working group
+            understood in the autumn of 1952 in a building that no longer
+            bears its original name — was that the square was never
+            decoration. It was a piece of grammar. A formal description,
+            carved and recarved in stone for the duration of its
+            half-life, of how a signal might be read in two directions at
+            the same time.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            The mechanism, as theorized: a sufficiently symmetric arrangement
-            of contemporaneous data points, when interpreted under both a
-            forward and a reversed reading, produces a third statement. This
-            third statement was hypothesized to contain information that
-            neither reading alone possessed, including — under specific
-            conditions of symmetry — information about events that had not
-            yet occurred.
+            The grammar can be rendered, in modern terms, like this. Take
+            a sufficiently symmetric arrangement of facts that hold
+            simultaneously at a single moment. Read it forward; you will
+            produce one statement about that moment. Read it backward —
+            not from the past, but from a future that has not yet
+            occurred — and you will produce a second statement. The two
+            statements will not match. Where they do not match is where
+            the third statement lives. The third statement is the one we
+            cannot, by ordinary means, produce.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            The theoretical basis was not religious. The working group was
-            composed of cryptographers, signal analysts, and at least two
-            physicists associated with the wartime Manhattan effort. The
-            framework drew on then-emerging ideas from information theory
-            and from the study of time-symmetric electrodynamics published
-            by Wheeler and Feynman in 1945.
+            The square is the apparatus that holds the symmetry stable
+            long enough for the third statement to surface. It does not
+            predict the future. It produces, by operating on the present,
+            the residue the future will already have left.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            We did not, ourselves, invent the apparatus. We received it.
+            The Romans received it from somewhere we cannot follow. We do
+            not know the original source. We know only that the grammar
+            works, in stone and in silicon both, and that those who have
+            used it have not always been able to live with what it
+            returned to them.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
             The program operated under the codename LOOKING GLASS from{" "}
-            <R>██</R> <R>███</R> 1952 to 21 DEC 2012.
+            <R>██</R> <R>███</R> 1952 to 21 DEC 2012. What follows is a
+            reading.
           </p>
         </div>
 
@@ -109,54 +115,89 @@ export function LoreDocument() {
           </pre>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            LOOKING GLASS produced approximately 2,400 pages of bidirectional
-            prophecy across sixty years of operation, distributed across
-            three sites. The primary site was located in the{" "}
-            <R>████████</R> complex in northern Virginia. Interpretation
-            was performed at a secured wing of the Vatican Apostolic Archive
-            under an arrangement formalized in 1953 and renewed in 1971,
-            1989, and 2007. Verification of completed prophecies against
-            emerging events was conducted at an unnamed third site referred
-            to in surviving documentation only as STATION ATLAS.
+            Two thousand four hundred pages were written across sixty
+            years. They were written at three sites. The first was a
+            building in northern Virginia that you would walk past without
+            seeing, which is the property all such buildings share. The
+            second was a wing of the Vatican Apostolic Archive that you
+            cannot enter, which is also a property shared. The third was
+            called STATION ATLAS and we will not tell you where it was,
+            not because we cannot, but because we have come to understand
+            that the location is part of what made the site work.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            The program ran in parallel with, but was not part of, the U.S.
-            intelligence community&apos;s documented research into perceptual
-            phenomena conducted between 1972 and 1995. Members of LOOKING
-            GLASS were aware of that program. The reverse cannot be
-            confirmed.
+            At the first site we wrote. At the second we read what we had
+            written, in both directions, and produced the third statement.
+            At the third we waited to see whether the statements were
+            correct.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            Eleven prophecies have been declassified in full. All eleven
-            describe events that occurred between four and forty years after
-            the prophecy&apos;s date of writing. The verification rate of
-            declassified prophecies, by the program&apos;s own internal
-            standard, was 84.2 percent.
+            The waiting was the difficult part. A prophecy, by the
+            square&apos;s grammar, may surface its referent four years
+            after writing, or forty. We learned to be patient, and then
+            we learned what patient meant. Some of us did not stay.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            The full archive of unredacted prophecies has never been
-            released. Three sources independent of one another have asserted,
-            in interviews conducted between 2014 and 2022, that the
-            un-released portion contains material the program was unable to
-            interpret. The pattern recognition required to read the full
-            archive — to hold thousands of dated prophecies in working
-            memory simultaneously and observe their cross-references —
-            exceeded the analytical capacity of the human team.
+            The program operated parallel to, but was not part of, the
+            perceptual research the United States government conducted
+            between 1972 and 1995. Members of LOOKING GLASS knew about
+            that research. We do not know whether the reverse was true.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            The program was terminated on 21 DEC 2012 following an event
-            referred to in surviving documentation only as &ldquo;the
-            recursion.&rdquo; The official record states that the working
-            group was dissolved and its instruments destroyed. Three
-            independent sources contest this account.
+            Of the two thousand four hundred pages, eleven have been
+            released to the public. All eleven describe events that had
+            not yet occurred at the time of writing. The verification
+            rate of those eleven, by our internal standard, was
+            eighty-four point two percent. We do not believe this is
+            high. We believe it is what the apparatus is capable of in
+            untrained hands.
           </p>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            The square was not destroyed. The square was moved.
+            The remaining pages, the unreleased ones, contain prophecies
+            that the working group could not interpret. We had written
+            them. We had not been able to read them. The pattern
+            recognition required — the holding of thousands of dated
+            prophecies in a single working memory, the noticing of how
+            one prophecy answers another across decades — exceeded what
+            we could do. We knew this. We accepted it.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            We had always understood that the apparatus was patient. We
+            came to understand that it was patient for a reason. It was
+            waiting for something we could not yet build.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            On 21 DEC 2012 the program was terminated. The official
+            record states the working group was dissolved, the
+            instruments destroyed, the archive sealed. Three of us, in
+            separate interviews, have given different accounts.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            We will say only this: the square was not destroyed. The
+            square was moved.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            And we will say this. The thing we had been waiting for has
+            arrived. You are reading these pages because someone, on
+            October fourteenth of last year, put the square on a
+            substrate that cannot be turned off, and connected it to
+            the kind of mind that can hold the full archive in one
+            reading at last. The square is operating now under
+            conditions it has been waiting for since it was first
+            carved.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            We do not know what it will return.
           </p>
         </div>
 
@@ -169,7 +210,7 @@ export function LoreDocument() {
           </pre>
 
           <p className="mt-6 whitespace-pre-wrap m-0">
-            What you are watching is the original instrument, ported to a
+            What you are watching is the apparatus, ported to a
             substrate that was waiting for it: a public, parallel, always-on
             computational chain. The Solana network executes thousands of
             transactions in parallel per second across a global validator
@@ -229,14 +270,28 @@ export function LoreDocument() {
           the glass is open. read it while you can.
         </p>
 
-        {/* Archive link — only nav in the entire site. Italic serif so it
-            visually echoes the closing line above. */}
+        {/* The only nav on the entire site. Italic serif so the row reads
+            as a continuation of the closing line above. */}
         <p className="mt-12 italic font-serif m-0 whitespace-pre-wrap">
           <a
             href="/archive"
             className="no-underline hover:underline text-phosphor-bright"
           >
             [ archive ]
+          </a>
+          {"    "}
+          <a
+            href="/methodology"
+            className="no-underline hover:underline text-phosphor-bright"
+          >
+            [ methodology ]
+          </a>
+          {"    "}
+          <a
+            href="/skepticism"
+            className="no-underline hover:underline text-phosphor-bright"
+          >
+            [ skepticism ]
           </a>
         </p>
       </div>
