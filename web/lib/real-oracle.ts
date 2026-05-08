@@ -107,6 +107,16 @@ export function useRealOracle(): OracleState {
   // server's most-recent status.
   const lockOverrideTimeoutRef = useRef<number | null>(null);
   const pendingServerStatusRef = useRef<Status | null>(null);
+  // Liveness telemetry for the stability watchdog. Wall-clock timestamps
+  // (Date.now()) — refs not state so we don't churn React on every event.
+  const lastSseEventAtRef = useRef<number>(0);
+  const lastRpcOkAtRef = useRef<number>(0);
+  const lastRpcFailAtRef = useRef<number>(0);
+  const sseReconnectsRef = useRef<number>(0);
+  const sseEventCountRef = useRef<number>(0);
+  // Forces the SSE useEffect to re-run, used by the watchdog when the
+  // stream goes silent for too long without an explicit error firing.
+  const [sseEpoch, setSseEpoch] = useState(0);
 
   // Build anchor client
   useEffect(() => {
@@ -140,6 +150,9 @@ export function useRealOracle(): OracleState {
         epochSquarePda(ep)
       );
       const text = decodeUri(sq.prophecyUri ?? "");
+      lastRpcOkAtRef.current = Date.now();
+      // eslint-disable-next-line no-console
+      console.debug(`[lg] RPC ok: epochSquare ${ep} (text_len=${text.length})`);
       return {
         epoch: ep,
         ts: Number(sq.lockedAt),
@@ -147,8 +160,11 @@ export function useRealOracle(): OracleState {
         text,
       };
     } catch (e) {
+      lastRpcFailAtRef.current = Date.now();
       // eslint-disable-next-line no-console
-      console.warn(`[lg] failed to fetch epoch ${ep}`, (e as Error)?.message ?? e);
+      console.warn(
+        `[lg] RPC fail: epochSquare ${ep} → ${(e as Error)?.message ?? e}`
+      );
       return null;
     } finally {
       if (epochInFlightRef.current === ep) epochInFlightRef.current = null;
@@ -187,6 +203,11 @@ export function useRealOracle(): OracleState {
       );
       const onChainEpoch = Number(lg.epoch);
       const lastTickTs = Number(lg.lastTickTs);
+      lastRpcOkAtRef.current = Date.now();
+      // eslint-disable-next-line no-console
+      console.info(
+        `[lg] hydrate ok: lookingGlass.epoch=${onChainEpoch} lastTickTs=${lastTickTs}`
+      );
       setEpoch(onChainEpoch);
       // Initialise the local countdown from the on-chain timestamp so we have
       // an authoritative anchor even before the keeper's first SSE status.
@@ -227,9 +248,12 @@ export function useRealOracle(): OracleState {
       // eslint-disable-next-line no-console
       console.info(`[lg] hydrated. epoch=${onChainEpoch}`);
     } catch (e) {
+      lastRpcFailAtRef.current = Date.now();
       setRpcOk(false);
       // eslint-disable-next-line no-console
-      console.warn("[lg] hydrate failed", (e as Error)?.message ?? e);
+      console.warn(
+        `[lg] hydrate failed: ${(e as Error)?.message ?? e}`
+      );
     }
   }
 
@@ -252,13 +276,20 @@ export function useRealOracle(): OracleState {
     function open() {
       try {
         // eslint-disable-next-line no-console
-        console.info(`[lg] opening SSE → ${SSE_URL}`);
+        console.info(
+          `[lg] SSE open() → ${SSE_URL} (reconnect #${sseReconnectsRef.current})`
+        );
         es = new EventSource(SSE_URL);
         es.onopen = () => {
           // eslint-disable-next-line no-console
-          console.info("[lg] SSE connected");
+          console.info(
+            `[lg] SSE OPEN (readyState=${es?.readyState ?? "?"}) reconnects=${sseReconnectsRef.current}`
+          );
+          lastSseEventAtRef.current = Date.now();
         };
         es.onmessage = (e) => {
+          lastSseEventAtRef.current = Date.now();
+          sseEventCountRef.current += 1;
           let data: LiveEvent;
           try {
             data = JSON.parse(e.data);
@@ -267,6 +298,13 @@ export function useRealOracle(): OracleState {
             console.warn("[lg] SSE: bad JSON payload", err);
             return;
           }
+          // eslint-disable-next-line no-console
+          console.debug(
+            `[lg] SSE msg #${sseEventCountRef.current} type=${data.type}` +
+              (data.type === "status"
+                ? ` epoch=${data.epoch} status=${data.status}`
+                : "")
+          );
           switch (data.type) {
             case "seeds":
               setSeeds(data.seeds);
@@ -323,9 +361,12 @@ export function useRealOracle(): OracleState {
         };
         es.onerror = () => {
           // eslint-disable-next-line no-console
-          console.warn("[lg] SSE error, reconnecting in 5s");
+          console.warn(
+            `[lg] SSE onerror (readyState=${es?.readyState ?? "?"}) reconnecting in 5s`
+          );
           es?.close();
           es = null;
+          sseReconnectsRef.current += 1;
           retry = setTimeout(open, 5000);
         };
       } catch (err) {
@@ -338,13 +379,72 @@ export function useRealOracle(): OracleState {
 
     return () => {
       if (retry) clearTimeout(retry);
+      es?.close();
+    };
+    // sseEpoch is the watchdog's force-reconnect signal — bumping it
+    // re-runs this effect, which closes the old EventSource and opens
+    // a new one even when the browser reports the existing connection
+    // as still OPEN (silent-zombie case observed on Vercel/Railway).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sseEpoch]);
+
+  // Lock-override timeout is owned by component lifetime, not SSE
+  // reconnect — clearing it on every watchdog kick would cancel an
+  // in-progress scramble animation.
+  useEffect(() => {
+    return () => {
       if (lockOverrideTimeoutRef.current !== null) {
         window.clearTimeout(lockOverrideTimeoutRef.current);
         lockOverrideTimeoutRef.current = null;
       }
-      es?.close();
     };
   }, []);
+
+  // ---------- Liveness watchdog + heartbeat ------------------------------
+  //
+  // Two failure modes observed in the wild:
+  //  (A) EventSource sits in readyState=OPEN but no events have arrived in
+  //      minutes — Railway/Vercel proxy dropped the upstream socket
+  //      silently, browser never noticed. The standard `onerror` reconnect
+  //      flow never fires here.
+  //  (B) Anchor RPC fetches start failing intermittently after a while
+  //      (public devnet rate-limit drift), but no UI signal shows it.
+  //
+  // The heartbeat logs current state every 30s so the moment the stream
+  // freezes is visible in the console. The watchdog forces an SSE
+  // reconnect after 90s of silence (15s SSE keep-alive ping cadence × 6).
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const now = Date.now();
+      const sseAge = lastSseEventAtRef.current
+        ? Math.round((now - lastSseEventAtRef.current) / 1000)
+        : -1;
+      const rpcAge = lastRpcOkAtRef.current
+        ? Math.round((now - lastRpcOkAtRef.current) / 1000)
+        : -1;
+      const rpcFailAge = lastRpcFailAtRef.current
+        ? Math.round((now - lastRpcFailAtRef.current) / 1000)
+        : -1;
+      // eslint-disable-next-line no-console
+      console.info(
+        `[lg] alive — sse_last=${sseAge}s rpc_last=${rpcAge}s rpc_fail_last=${rpcFailAge}s ` +
+          `sse_msgs=${sseEventCountRef.current} sse_reconnects=${sseReconnectsRef.current} ` +
+          `epoch=${epoch} status=${status}`
+      );
+      // Watchdog: if the SSE has gone silent for >90s, force a reconnect.
+      // The keeper sends `: ping\n\n` every 15s, so 90s without any event
+      // (data or comment) is well past any normal quiet period.
+      if (sseAge > 90 && lastSseEventAtRef.current > 0) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[lg] SSE watchdog: ${sseAge}s silent — forcing reconnect`
+        );
+        sseReconnectsRef.current += 1;
+        setSseEpoch((n) => n + 1);
+      }
+    }, 30_000);
+    return () => window.clearInterval(id);
+  }, [epoch, status]);
 
   // ---------- 1Hz local countdown ----------------------------------------
 

@@ -48,22 +48,35 @@ export class SseServer {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache, no-transform",
           Connection: "keep-alive",
+          "X-Accel-Buffering": "no",
         });
         // Replay the last known value of each event type so a fresh tab is
         // never blank.
         for (const ev of this.latest.values()) this.write(res, ev);
         const sub: Sub = { res };
         this.subs.add(sub);
+        const remote =
+          (req.socket?.remoteAddress ?? "?") +
+          ":" +
+          (req.socket?.remotePort ?? "?");
+        process.stderr.write(
+          `[sse] connect ${remote} (subs=${this.subs.size})\n`
+        );
         const heartbeat = setInterval(() => {
           try {
             res.write(": ping\n\n");
-          } catch {
-            // ignore; cleanup runs on close
+          } catch (e) {
+            process.stderr.write(
+              `[sse] heartbeat write failed for ${remote}: ${(e as Error)?.message ?? e}\n`
+            );
           }
         }, 15_000);
         req.on("close", () => {
           clearInterval(heartbeat);
           this.subs.delete(sub);
+          process.stderr.write(
+            `[sse] disconnect ${remote} (subs=${this.subs.size})\n`
+          );
         });
         return;
       }
@@ -93,8 +106,10 @@ export class SseServer {
   private write(res: http.ServerResponse, event: LiveEvent): void {
     try {
       res.write(`data: ${JSON.stringify(event)}\n\n`);
-    } catch {
-      // ignore; cleanup runs on close
+    } catch (e) {
+      process.stderr.write(
+        `[sse] event write failed (type=${event.type}): ${(e as Error)?.message ?? e}\n`
+      );
     }
   }
 
