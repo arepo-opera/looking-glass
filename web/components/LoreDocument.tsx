@@ -22,10 +22,11 @@ export function LoreDocument() {
       className="bg-charcoal w-full"
       style={{ fontFeatureSettings: '"calt" 0, "liga" 0' }}
     >
-      <div className="max-w-[72ch] mx-auto px-4 py-20 font-mono text-[12px] leading-[1.6] text-phosphor-bright">
+      <div className="max-w-[72ch] xl:max-w-[1280px] mx-auto px-4 py-20 font-mono text-[12px] leading-[1.6] text-phosphor-bright">
 
-        {/* Cover sheet */}
-        <pre className="whitespace-pre m-0 leading-[1.6]">
+        {/* Cover sheet — full width even at xl, sits above the two-column
+            flow like the masthead of a carbon-paper printout. */}
+        <pre className="whitespace-pre m-0 leading-[1.6] xl:max-w-[72ch] xl:mx-auto">
 {RULE}{"\n"}
 {"SUBJECT       : LOOKING GLASS"}{"\n"}
 {"CLASSIFICATION: "}<R>████████</R>{" // "}<R>████</R>{" // ORIGINAL DECLASSIFIED 2012\n"}
@@ -35,8 +36,13 @@ export function LoreDocument() {
 {RULE}
         </pre>
 
+        {/* Two-column flow at xl. Section headers and paragraphs each carry
+            break-inside-avoid so a header never orphans at the bottom of a
+            column and a single paragraph never splits across columns. */}
+        <div className="xl:columns-2 xl:gap-x-20 xl:mt-12 [&_p]:break-inside-avoid [&_pre]:break-inside-avoid">
+
         {/* I. THE THEORY */}
-        <div id="theory" className="mt-12">
+        <div id="theory" className="mt-12 xl:mt-0">
           <pre className="whitespace-pre m-0 text-phosphor-dim">
 {SECTION_RULE}{"\n"}
 {" I. THE THEORY"}{"\n"}
@@ -265,14 +271,17 @@ export function LoreDocument() {
           </p>
         </div>
 
-        {/* Closing */}
-        <p className="mt-[6em] italic m-0 whitespace-pre-wrap">
+        </div>{/* /two-column flow */}
+
+        {/* Closing — outside the columns so it sits as a single full-width
+            line at the foot of the document. */}
+        <p className="mt-[6em] italic m-0 whitespace-pre-wrap xl:max-w-[72ch] xl:mx-auto">
           the glass is open. read it while you can.
         </p>
 
         {/* The only nav on the entire site. Italic serif so the row reads
             as a continuation of the closing line above. */}
-        <p className="mt-12 italic font-serif m-0 whitespace-pre-wrap">
+        <p className="mt-12 italic font-serif m-0 whitespace-pre-wrap xl:max-w-[72ch] xl:mx-auto">
           <a
             href="/archive"
             className="no-underline hover:underline text-phosphor-bright"

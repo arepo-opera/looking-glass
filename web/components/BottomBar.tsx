@@ -12,7 +12,9 @@ const MOTTO = `SATOR${SEP}AREPO${SEP}TENET${SEP}OPERA${SEP}ROTAS${SEP}`;
 export function BottomBar({ programId, blockHeight, rpcOk }: Props) {
   return (
     <footer className="h-[24px] shrink-0 border-t border-phosphor-dim flex items-center justify-between text-[12px] font-mono overflow-hidden">
-      <div className="flex-1 overflow-hidden text-phosphor-dim min-w-0">
+      {/* Motto scroller hidden below md — at phone widths it competes with
+          the PRG/BLK/RPC stats for the bar's 24px height and clips. */}
+      <div className="hidden md:block flex-1 overflow-hidden text-phosphor-dim min-w-0">
         {/* Two identical copies side-by-side; animation ends at -50%, so
             the second copy lands precisely where the first one started. */}
         <div
@@ -25,7 +27,7 @@ export function BottomBar({ programId, blockHeight, rpcOk }: Props) {
           </span>
         </div>
       </div>
-      <div className="px-3 flex gap-4 shrink-0 leading-[24px]">
+      <div className="px-3 flex gap-4 shrink-0 leading-[24px] ml-auto md:ml-0">
         <span>
           <span className="text-phosphor-dim">PRG </span>
           <span className="text-phosphor-bright">

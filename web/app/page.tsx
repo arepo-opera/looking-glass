@@ -29,25 +29,29 @@ function Dashboard({ oracle }: { oracle: OracleState }) {
 
   return (
     <>
-      <div className="h-screen w-screen flex flex-col">
+      {/* Below md: vertical scroll with stacked regions. md+: fixed-height
+          three-column layout (unchanged from desktop). The cube uses
+          order-1 on mobile so the visitor lands on it without scrolling
+          past the seeds, but stays in the middle column on md+. */}
+      <div className="min-h-screen md:h-screen w-screen flex flex-col">
         <TopBar
           status={o.status}
           epoch={o.epoch}
           nextTickSeconds={o.nextTickSeconds}
           programId={o.programId}
         />
-        <main className="flex-1 flex min-h-0">
-          <aside className="w-1/4 border-r border-phosphor-dim min-w-0">
-            <SeedStream seeds={o.seeds} />
-          </aside>
-          <section className="w-1/2 border-r border-phosphor-dim min-w-0">
+        <main className="flex-1 flex flex-col md:flex-row min-h-0">
+          <section className="order-1 md:order-2 w-full md:w-1/2 md:border-r border-phosphor-dim min-w-0 aspect-square md:aspect-auto md:min-h-0">
             <SatorSquare3D
               glyphs={o.glyphs}
               status={o.status}
               effectsEnabled={effectsEnabled}
             />
           </section>
-          <aside className="w-1/4 min-w-0">
+          <aside className="order-2 md:order-1 w-full md:w-1/4 md:border-r border-phosphor-dim border-t md:border-t-0 min-w-0">
+            <SeedStream seeds={o.seeds} />
+          </aside>
+          <aside className="order-3 w-full md:w-1/4 border-t md:border-t-0 border-phosphor-dim min-w-0">
             <ProphecyLog prophecies={o.prophecies} />
           </aside>
         </main>

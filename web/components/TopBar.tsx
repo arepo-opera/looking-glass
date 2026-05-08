@@ -16,9 +16,9 @@ export function TopBar({ status, epoch, nextTickSeconds, programId }: Props) {
   const mm = pad2(Math.floor(nextTickSeconds / 60));
   const ss = pad2(nextTickSeconds % 60);
   return (
-    <header className="h-[32px] shrink-0 border-b border-phosphor-dim flex items-center justify-between px-3">
+    <header className="h-[32px] shrink-0 border-b border-phosphor-dim flex items-center justify-between px-3 sticky top-0 z-30 bg-charcoal md:static">
       <StatusPill status={status} />
-      <div className="text-[12px] font-mono flex gap-6">
+      <div className="text-[12px] font-mono flex gap-3 md:gap-6">
         <span>
           <span className="text-phosphor-dim">NEXT.TICK</span> {mm}:{ss}
         </span>
@@ -26,7 +26,9 @@ export function TopBar({ status, epoch, nextTickSeconds, programId }: Props) {
           <span className="text-phosphor-dim">EP</span>{" "}
           {String(epoch).padStart(4, "0")}
         </span>
-        <span>
+        {/* PRG hidden below md — phone widths can't fit the truncated
+            program ID alongside STATUS / EP / NEXT.TICK without wrap. */}
+        <span className="hidden md:inline">
           <span className="text-phosphor-dim">PRG</span>{" "}
           {programId.slice(0, 4)}...{programId.slice(-4)}
         </span>

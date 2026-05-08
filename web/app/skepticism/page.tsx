@@ -16,8 +16,8 @@ function SkepticismBody() {
         className="bg-charcoal min-h-screen w-full"
         style={{ fontFeatureSettings: '"calt" 0, "liga" 0' }}
       >
-        <div className="max-w-[72ch] mx-auto px-4 py-20 font-mono text-[12px] leading-[1.6] text-phosphor-bright">
-          <pre className="whitespace-pre m-0 leading-[1.6]">
+        <div className="max-w-[72ch] xl:max-w-[1280px] mx-auto px-4 py-20 font-mono text-[12px] leading-[1.6] text-phosphor-bright">
+          <pre className="whitespace-pre m-0 leading-[1.6] xl:max-w-[72ch] xl:mx-auto">
             {RULE}
             {"\n"}
             {"SUBJECT       : SKEPTICISM"}
@@ -26,6 +26,11 @@ function SkepticismBody() {
             {"\n"}
             {RULE}
           </pre>
+
+          {/* Two-column flow at xl. Section labels and paragraphs each
+              carry break-inside-avoid so OBJECTION headers don't orphan
+              and individual paragraphs don't split. */}
+          <div className="xl:columns-2 xl:gap-x-20 [&_p]:break-inside-avoid [&_pre]:break-inside-avoid">
 
           <p className="mt-12 whitespace-pre-wrap m-0">
             This page exists because the project&apos;s claims, taken at
@@ -215,7 +220,9 @@ function SkepticismBody() {
             own.
           </p>
 
-          <p className="mt-[6em] italic font-serif m-0 whitespace-pre-wrap">
+          </div>{/* /two-column flow */}
+
+          <p className="mt-[6em] italic font-serif m-0 whitespace-pre-wrap xl:max-w-[72ch] xl:mx-auto">
             <a
               href="/"
               className="no-underline hover:underline text-phosphor-bright"

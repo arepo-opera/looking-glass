@@ -16,8 +16,8 @@ function MethodologyBody() {
         className="bg-charcoal min-h-screen w-full"
         style={{ fontFeatureSettings: '"calt" 0, "liga" 0' }}
       >
-        <div className="max-w-[72ch] mx-auto px-4 py-20 font-mono text-[12px] leading-[1.6] text-phosphor-bright">
-          <pre className="whitespace-pre m-0 leading-[1.6]">
+        <div className="max-w-[72ch] xl:max-w-[1280px] mx-auto px-4 py-20 font-mono text-[12px] leading-[1.6] text-phosphor-bright">
+          <pre className="whitespace-pre m-0 leading-[1.6] xl:max-w-[72ch] xl:mx-auto">
             {RULE}
             {"\n"}
             {"SUBJECT       : METHODOLOGY"}
@@ -26,6 +26,11 @@ function MethodologyBody() {
             {"\n"}
             {RULE}
           </pre>
+
+          {/* Two-column flow at xl. Section headers, paragraphs, and
+              field-aligned <pre> tables each carry break-inside-avoid so
+              they stay coherent across column breaks. */}
+          <div className="xl:columns-2 xl:gap-x-20 [&_p]:break-inside-avoid [&_pre]:break-inside-avoid">
 
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
             {SECTION_RULE}
@@ -267,7 +272,9 @@ function MethodologyBody() {
             </a>
           </pre>
 
-          <p className="mt-[6em] italic font-serif m-0 whitespace-pre-wrap">
+          </div>{/* /two-column flow */}
+
+          <p className="mt-[6em] italic font-serif m-0 whitespace-pre-wrap xl:max-w-[72ch] xl:mx-auto">
             <a
               href="/"
               className="no-underline hover:underline text-phosphor-bright"
