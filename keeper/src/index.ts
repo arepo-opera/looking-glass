@@ -134,7 +134,7 @@ async function refreshSeeds(
   sse: SseServer
 ): Promise<void> {
   try {
-    state.seeds = await fetchAllSeeds(ctx, cfg.metricsRpcUrl);
+    state.seeds = await fetchAllSeeds(ctx, cfg.metricsRpcUrl, state.epoch);
     sse.broadcast({
       type: "seeds",
       seeds: state.seeds,

@@ -45,46 +45,93 @@ function MethodologyBody() {
             {SECTION_RULE}
           </pre>
           <p className="mt-6 whitespace-pre-wrap m-0">
-            Five domains, sampled every three minutes. Each produces a
+            Six domains, sampled every three minutes. Each produces a
             32-byte digest from real data:
           </p>
           <pre className="mt-6 whitespace-pre m-0 leading-[1.6]">
-            {"  MARKETS    Pyth Network price feeds for SOL, BTC, ETH"}
+            {"  MARKETS    Six Pyth Network price feeds: SOL, BTC, ETH"}
             {"\n"}
-            {"             (price + confidence interval, signed by Pyth's"}
+            {"             (crypto), XAU (gold), EUR (forex), and a"}
             {"\n"}
-            {"             on-chain oracle network)"}
+            {"             volatility index. Together they represent broad"}
+            {"\n"}
+            {"             financial state, not crypto-only state."}
             {"\n"}
             {"  CHAIN      Solana network metrics via Helius RPC: average"}
             {"\n"}
             {"             transactions-per-second, large-transfer count,"}
             {"\n"}
-            {"             new-token launch velocity"}
+            {"             new-token launch velocity."}
             {"\n"}
-            {"  WORLD      Real-time news event data: pillar"}
+            {"  WORLD      Wikipedia recent-changes stream: edit velocity,"}
             {"\n"}
-            {"             classification, article frequency, dominant"}
+            {"             dominant namespace, hash of the most-edited"}
             {"\n"}
-            {"             section tag, sourced from a public news API"}
+            {"             article title in the recent five-minute window."}
+            {"\n"}
+            {"             Captures collective human attention in real"}
+            {"\n"}
+            {"             time."}
             {"\n"}
             {"  HEAVENS    NOAA Space Weather Prediction Center data:"}
             {"\n"}
             {"             planetary K-index, X-ray solar flare class."}
             {"\n"}
-            {"             Lunar phase computed locally via standard"}
+            {"             USGS earthquake data: significant seismic events"}
             {"\n"}
-            {"             astronomical libraries."}
+            {"             in the last 24 hours. Lunar phase computed"}
             {"\n"}
-            {"  ECHO       Hash of recent prior prophecies from the"}
+            {"             locally via standard astronomical libraries."}
             {"\n"}
-            {"             on-chain ring buffer. Self-referential by"}
+            {"  ECHO       Hash of the eight most recent prophecies in the"}
             {"\n"}
-            {"             design."}
+            {"             on-chain ring buffer. Represents the system's"}
+            {"\n"}
+            {"             recent memory."}
+            {"\n"}
+            {"  DRIFT      A novelty signal: the structural distance"}
+            {"\n"}
+            {"             between the current seed bundle and the"}
+            {"\n"}
+            {"             running-average of the last eight seed bundles."}
+            {"\n"}
+            {"             High drift indicates an anomalous moment"}
+            {"\n"}
+            {"             relative to recent history."}
           </pre>
           <p className="mt-6 whitespace-pre-wrap m-0">
-            Each seed is reduced to a 32-byte keccak digest before on-chain
-            commitment. The raw display values are streamed to the
-            dashboard via Server-Sent Events.
+            ECHO and DRIFT are combined via keccak before on-chain
+            commitment. The on-chain record receives five seed digests
+            per tick; the dashboard displays six channels.
+          </p>
+
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+            {SECTION_RULE}
+            {"\n"}
+            {" THE SPINE"}
+            {"\n"}
+            {SECTION_RULE}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Each square has a center cell at row three, column three —
+            the axis of palindromic symmetry. Across consecutive ticks,
+            a different seed exerts primacy over this spine cell:
+          </p>
+          <pre className="mt-6 whitespace-pre m-0 leading-[1.6]">
+            {"  epoch ≡ 0 (mod 5):  MARKETS"}
+            {"\n"}
+            {"  epoch ≡ 1 (mod 5):  CHAIN"}
+            {"\n"}
+            {"  epoch ≡ 2 (mod 5):  WORLD"}
+            {"\n"}
+            {"  epoch ≡ 3 (mod 5):  HEAVENS"}
+            {"\n"}
+            {"  epoch ≡ 4 (mod 5):  ECHO+DRIFT"}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Five epochs constitute one full rotation. This produces a
+            slow structural rhythm in the archive that emerges only
+            across many readings, not within any single one.
           </p>
 
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
