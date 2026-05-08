@@ -15,6 +15,13 @@ import {
   respondToProphecyRequest,
   ProphecyContext,
 } from "./prophecy-listener";
+import {
+  loadSynthesisConfig,
+  readLayerIndex,
+  fireLayer1,
+  fireLayer2,
+  type SynthesisConfig,
+} from "./synthesis";
 import { fetchAllSeeds } from "./seeds";
 import type { SeedDisplay } from "./seeds/types";
 import { SseServer } from "./sse-server";
@@ -22,6 +29,18 @@ import type { Status } from "./types";
 
 const MIN_TICK_INTERVAL_SECS = 180;
 const TICK_CLOCK_SKEW_GRACE_SECS = 3;
+
+// Module-level handles set in main(). The synthesis runner reaches
+// these from inside tickIfDue's prophecy-completion path. They're not
+// passed through tickIfDue's signature because adding sse + synthesis
+// config would cascade to every call site of tickIfDue and we want to
+// keep those minimal.
+let sseInstance: SseServer | null = null;
+const synthesisCfg = loadSynthesisConfig();
+// Re-entry guard: a Layer 1 or Layer 2 fire takes 5-30s and could
+// overlap the next tick. The mutex skips a fire if one is already in
+// flight; we'll catch the missed window on the next tick.
+let layerFireInFlight = false;
 
 // How often we re-poll real-world seed feeds while the cube is GATHERING.
 // 30s lines up with the dashboard's existing "next tick in N" cadence.
@@ -116,6 +135,14 @@ async function tickIfDue(
     state.status = "READING";
     await respondToProphecyRequest(ctx, ep, context);
     state.status = "GATHERING";
+    // Layer 1 / Layer 2 fire AFTER the atomic prophecy is committed.
+    // Failures swallowed so a synthesis hiccup never blocks the next
+    // tick; full diagnostics land in the keeper log.
+    if (synthesisCfg.enabled && sseInstance) {
+      runLayersIfDue(ctx, synthesisCfg, sseInstance).catch((e) =>
+        log.system(`[layers] error: ${(e as Error)?.message ?? e}`)
+      );
+    }
   } catch (e: any) {
     state.status = "GATHERING";
     const s = String(e?.message ?? e);
@@ -124,6 +151,80 @@ async function tickIfDue(
     } else {
       log.system(`tick failed: ${s}`);
     }
+  }
+}
+
+async function runLayersIfDue(
+  ctx: ClientCtx,
+  cfg: SynthesisConfig,
+  sse: SseServer
+): Promise<void> {
+  if (layerFireInFlight) {
+    log.system(`[layers] previous fire still in flight, skipping this tick`);
+    return;
+  }
+  layerFireInFlight = true;
+  try {
+    const li = await readLayerIndex(ctx);
+    if (!li) {
+      log.system(
+        `[layers] LayerIndex PDA not initialized — run init_layer_index after the program revision deploys`
+      );
+      return;
+    }
+    // Current on-chain epoch (the one we just committed a prophecy for).
+    const lgPda = lookingGlassPda(ctx.programId);
+    const lg: any = await (ctx.program.account as any).lookingGlass.fetch(
+      lgPda
+    );
+    const epoch = Number(lg.epoch);
+
+    // Layer 1: fire when the next-layer1 window has fully accumulated.
+    // Window N covers EP ((N * interval) + 1) … ((N + 1) * interval).
+    // Trigger condition: epoch >= (next_layer1 + 1) * interval.
+    const layer1Window = cfg.layer1Interval;
+    const nextLayer1Trigger =
+      (li.nextLayer1 + 1) * layer1Window;
+    if (epoch >= nextLayer1Trigger) {
+      const start = li.nextLayer1 * layer1Window + 1;
+      const end = (li.nextLayer1 + 1) * layer1Window;
+      log.system(
+        `[layers] layer1 trigger: epoch=${epoch} >= ${nextLayer1Trigger} (debug_interval=${cfg.layer1Interval !== 100})`
+      );
+      const out = await fireLayer1(ctx, cfg, li.nextLayer1, start, end);
+      sse.broadcast({
+        type: "layer1-born",
+        layer1_index: out.layer1Index,
+        epoch_range: out.epochRange,
+        synthesis_uri: out.uri,
+        synthesis_hash: Buffer.from(out.hash).toString("hex"),
+        ts: Math.floor(Date.now() / 1000),
+      } as any);
+    }
+
+    // Re-read LayerIndex (it advanced if Layer 1 fired) and check Layer 2.
+    const li2 = await readLayerIndex(ctx);
+    if (!li2) return;
+    const layer2Window = cfg.layer2Interval;
+    const nextLayer2Trigger = (li2.nextLayer2 + 1) * layer2Window;
+    if (li2.nextLayer1 >= nextLayer2Trigger) {
+      const start = li2.nextLayer2 * layer2Window;
+      const end = (li2.nextLayer2 + 1) * layer2Window - 1;
+      log.system(
+        `[layers] layer2 trigger: nextLayer1=${li2.nextLayer1} >= ${nextLayer2Trigger}`
+      );
+      const out = await fireLayer2(ctx, cfg, li2.nextLayer2, start, end);
+      sse.broadcast({
+        type: "layer2-born",
+        layer2_index: out.layer2Index,
+        layer1_range: out.layer1Range,
+        synthesis_uri: out.uri,
+        synthesis_hash: Buffer.from(out.hash).toString("hex"),
+        ts: Math.floor(Date.now() / 1000),
+      } as any);
+    }
+  } finally {
+    layerFireInFlight = false;
   }
 }
 
@@ -194,6 +295,7 @@ async function main(): Promise<void> {
   };
 
   const sse = new SseServer();
+  sseInstance = sse;
   sse.start(cfg.ssePort, cfg.sseHost);
   log.rule();
   log.data("looking glass keeper online");

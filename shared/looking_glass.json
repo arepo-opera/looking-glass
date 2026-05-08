@@ -8,6 +8,89 @@
   },
   "instructions": [
     {
+      "name": "init_layer_index",
+      "docs": [
+        "One-time initialization of the LayerIndex PDA. Tracks the next",
+        "Layer 1 / Layer 2 index to be assigned. Path B from the Phase 19",
+        "spec — separate PDA so we don't have to migrate the existing",
+        "LookingGlass account on devnet."
+      ],
+      "discriminator": [
+        57,
+        29,
+        0,
+        80,
+        140,
+        244,
+        183,
+        106
+      ],
+      "accounts": [
+        {
+          "name": "looking_glass",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  111,
+                  107,
+                  105,
+                  110,
+                  103,
+                  95,
+                  103,
+                  108,
+                  97,
+                  115,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "layer_index",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  121,
+                  101,
+                  114,
+                  95,
+                  105,
+                  110,
+                  100,
+                  101,
+                  120
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "looking_glass"
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize",
       "discriminator": [
         175,
@@ -172,6 +255,266 @@
       ]
     },
     {
+      "name": "submit_layer1",
+      "discriminator": [
+        77,
+        14,
+        102,
+        55,
+        15,
+        16,
+        217,
+        30
+      ],
+      "accounts": [
+        {
+          "name": "looking_glass",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  111,
+                  107,
+                  105,
+                  110,
+                  103,
+                  95,
+                  103,
+                  108,
+                  97,
+                  115,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "layer_index",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  121,
+                  101,
+                  114,
+                  95,
+                  105,
+                  110,
+                  100,
+                  101,
+                  120
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "layer1",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  121,
+                  101,
+                  114,
+                  49
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "layer1_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_signer",
+          "signer": true,
+          "relations": [
+            "looking_glass"
+          ]
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "layer1_index",
+          "type": "u64"
+        },
+        {
+          "name": "epoch_range_start",
+          "type": "u64"
+        },
+        {
+          "name": "epoch_range_end",
+          "type": "u64"
+        },
+        {
+          "name": "synthesis_uri",
+          "type": "string"
+        },
+        {
+          "name": "synthesis_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "submit_layer2",
+      "discriminator": [
+        40,
+        237,
+        225,
+        154,
+        1,
+        127,
+        217,
+        118
+      ],
+      "accounts": [
+        {
+          "name": "looking_glass",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  111,
+                  107,
+                  105,
+                  110,
+                  103,
+                  95,
+                  103,
+                  108,
+                  97,
+                  115,
+                  115
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "layer_index",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  121,
+                  101,
+                  114,
+                  95,
+                  105,
+                  110,
+                  100,
+                  101,
+                  120
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "layer2",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  97,
+                  121,
+                  101,
+                  114,
+                  50
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "layer2_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "oracle_signer",
+          "signer": true,
+          "relations": [
+            "looking_glass"
+          ]
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "layer2_index",
+          "type": "u64"
+        },
+        {
+          "name": "layer1_range_start",
+          "type": "u64"
+        },
+        {
+          "name": "layer1_range_end",
+          "type": "u64"
+        },
+        {
+          "name": "synthesis_uri",
+          "type": "string"
+        },
+        {
+          "name": "synthesis_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "submit_prophecy",
       "discriminator": [
         138,
@@ -331,6 +674,19 @@
       ]
     },
     {
+      "name": "LayerIndex",
+      "discriminator": [
+        37,
+        185,
+        158,
+        125,
+        79,
+        153,
+        230,
+        83
+      ]
+    },
+    {
       "name": "LookingGlass",
       "discriminator": [
         5,
@@ -342,9 +698,61 @@
         54,
         67
       ]
+    },
+    {
+      "name": "SynthesisLayer1",
+      "discriminator": [
+        51,
+        38,
+        192,
+        44,
+        193,
+        30,
+        198,
+        147
+      ]
+    },
+    {
+      "name": "SynthesisLayer2",
+      "discriminator": [
+        137,
+        183,
+        35,
+        243,
+        27,
+        92,
+        123,
+        15
+      ]
     }
   ],
   "events": [
+    {
+      "name": "Layer1Born",
+      "discriminator": [
+        110,
+        36,
+        187,
+        168,
+        24,
+        241,
+        226,
+        207
+      ]
+    },
+    {
+      "name": "Layer2Born",
+      "discriminator": [
+        66,
+        56,
+        41,
+        196,
+        52,
+        47,
+        151,
+        172
+      ]
+    },
     {
       "name": "ProphecyBorn",
       "discriminator": [
@@ -412,6 +820,16 @@
       "code": 6007,
       "name": "UriTooLong",
       "msg": "Prophecy URI exceeds the maximum length."
+    },
+    {
+      "code": 6008,
+      "name": "LayerIndexMismatch",
+      "msg": "Layer index does not match the expected next-index value."
+    },
+    {
+      "code": 6009,
+      "name": "InvalidLayerRange",
+      "msg": "Layer range end must be >= range start."
     }
   ],
   "types": [
@@ -494,6 +912,102 @@
           {
             "name": "prophecy_submitted",
             "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Layer1Born",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "layer1_index",
+            "type": "u64"
+          },
+          {
+            "name": "synthesis_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "epoch_range_start",
+            "type": "u64"
+          },
+          {
+            "name": "epoch_range_end",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Layer2Born",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "layer2_index",
+            "type": "u64"
+          },
+          {
+            "name": "synthesis_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "layer1_range_start",
+            "type": "u64"
+          },
+          {
+            "name": "layer1_range_end",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LayerIndex",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "next_layer1",
+            "type": "u64"
+          },
+          {
+            "name": "next_layer2",
+            "type": "u64"
+          },
+          {
+            "name": "last_layer1_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "last_layer2_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           },
           {
             "name": "bump",
@@ -644,6 +1158,88 @@
           {
             "name": "locked_at",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SynthesisLayer1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "layer1_index",
+            "type": "u64"
+          },
+          {
+            "name": "locked_at",
+            "type": "i64"
+          },
+          {
+            "name": "epoch_range_start",
+            "type": "u64"
+          },
+          {
+            "name": "epoch_range_end",
+            "type": "u64"
+          },
+          {
+            "name": "synthesis_uri",
+            "type": "string"
+          },
+          {
+            "name": "synthesis_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SynthesisLayer2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "layer2_index",
+            "type": "u64"
+          },
+          {
+            "name": "locked_at",
+            "type": "i64"
+          },
+          {
+            "name": "layer1_range_start",
+            "type": "u64"
+          },
+          {
+            "name": "layer1_range_end",
+            "type": "u64"
+          },
+          {
+            "name": "synthesis_uri",
+            "type": "string"
+          },
+          {
+            "name": "synthesis_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }

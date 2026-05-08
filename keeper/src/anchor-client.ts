@@ -98,3 +98,34 @@ export function epochSquarePda(
     programId
   )[0];
 }
+
+export function layerIndexPda(programId: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("layer_index")],
+    programId
+  )[0];
+}
+
+export function layer1Pda(
+  programId: PublicKey,
+  layer1Index: number | bigint
+): PublicKey {
+  const buf = Buffer.alloc(8);
+  buf.writeBigUInt64LE(BigInt(layer1Index));
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("layer1"), buf],
+    programId
+  )[0];
+}
+
+export function layer2Pda(
+  programId: PublicKey,
+  layer2Index: number | bigint
+): PublicKey {
+  const buf = Buffer.alloc(8);
+  buf.writeBigUInt64LE(BigInt(layer2Index));
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("layer2"), buf],
+    programId
+  )[0];
+}

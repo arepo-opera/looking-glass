@@ -9,10 +9,14 @@ pub const PROPHECY_HISTORY_DEPTH: usize = 8;
 pub const SQUARE_SIZE: usize = 5;
 pub const UNIQUE_CELLS: usize = 13;
 pub const MAX_PROPHECY_URI_LEN: usize = 256;
+pub const MAX_SYNTHESIS_URI_LEN: usize = 256;
 pub const GLYPH_ALPHABET: &[u8; 16] = b"SATOREPNVCLDIMHU";
 
 pub const LOOKING_GLASS_SEED: &[u8] = b"looking_glass";
 pub const EPOCH_SEED: &[u8] = b"epoch";
+pub const LAYER_INDEX_SEED: &[u8] = b"layer_index";
+pub const LAYER1_SEED: &[u8] = b"layer1";
+pub const LAYER2_SEED: &[u8] = b"layer2";
 
 pub const UNIQUE_CELL_COORDS: [(usize, usize); UNIQUE_CELLS] = [
     (0, 0), (0, 1), (0, 2), (0, 3), (0, 4),
@@ -291,6 +295,118 @@ pub mod looking_glass {
         lg.paused = paused;
         Ok(())
     }
+
+    /// One-time initialization of the LayerIndex PDA. Tracks the next
+    /// Layer 1 / Layer 2 index to be assigned. Path B from the Phase 19
+    /// spec — separate PDA so we don't have to migrate the existing
+    /// LookingGlass account on devnet.
+    pub fn init_layer_index(ctx: Context<InitLayerIndex>) -> Result<()> {
+        let li = &mut ctx.accounts.layer_index;
+        li.next_layer1 = 0;
+        li.next_layer2 = 0;
+        li.last_layer1_hash = [0u8; 32];
+        li.last_layer2_hash = [0u8; 32];
+        li.bump = ctx.bumps.layer_index;
+        Ok(())
+    }
+
+    pub fn submit_layer1(
+        ctx: Context<SubmitLayer1>,
+        layer1_index: u64,
+        epoch_range_start: u64,
+        epoch_range_end: u64,
+        synthesis_uri: String,
+        synthesis_hash: [u8; 32],
+    ) -> Result<()> {
+        require!(
+            synthesis_uri.as_bytes().len() <= MAX_SYNTHESIS_URI_LEN,
+            OracleError::UriTooLong
+        );
+        require!(
+            epoch_range_end >= epoch_range_start,
+            OracleError::InvalidLayerRange
+        );
+
+        let li = &mut ctx.accounts.layer_index;
+        require!(
+            layer1_index == li.next_layer1,
+            OracleError::LayerIndexMismatch
+        );
+
+        let layer1 = &mut ctx.accounts.layer1;
+        let clock = Clock::get()?;
+        layer1.layer1_index = layer1_index;
+        layer1.locked_at = clock.unix_timestamp;
+        layer1.epoch_range_start = epoch_range_start;
+        layer1.epoch_range_end = epoch_range_end;
+        layer1.synthesis_uri = synthesis_uri;
+        layer1.synthesis_hash = synthesis_hash;
+        layer1.bump = ctx.bumps.layer1;
+
+        li.next_layer1 = li
+            .next_layer1
+            .checked_add(1)
+            .expect("layer1 index overflow");
+        li.last_layer1_hash = synthesis_hash;
+
+        emit!(Layer1Born {
+            layer1_index,
+            synthesis_hash,
+            epoch_range_start,
+            epoch_range_end,
+        });
+
+        Ok(())
+    }
+
+    pub fn submit_layer2(
+        ctx: Context<SubmitLayer2>,
+        layer2_index: u64,
+        layer1_range_start: u64,
+        layer1_range_end: u64,
+        synthesis_uri: String,
+        synthesis_hash: [u8; 32],
+    ) -> Result<()> {
+        require!(
+            synthesis_uri.as_bytes().len() <= MAX_SYNTHESIS_URI_LEN,
+            OracleError::UriTooLong
+        );
+        require!(
+            layer1_range_end >= layer1_range_start,
+            OracleError::InvalidLayerRange
+        );
+
+        let li = &mut ctx.accounts.layer_index;
+        require!(
+            layer2_index == li.next_layer2,
+            OracleError::LayerIndexMismatch
+        );
+
+        let layer2 = &mut ctx.accounts.layer2;
+        let clock = Clock::get()?;
+        layer2.layer2_index = layer2_index;
+        layer2.locked_at = clock.unix_timestamp;
+        layer2.layer1_range_start = layer1_range_start;
+        layer2.layer1_range_end = layer1_range_end;
+        layer2.synthesis_uri = synthesis_uri;
+        layer2.synthesis_hash = synthesis_hash;
+        layer2.bump = ctx.bumps.layer2;
+
+        li.next_layer2 = li
+            .next_layer2
+            .checked_add(1)
+            .expect("layer2 index overflow");
+        li.last_layer2_hash = synthesis_hash;
+
+        emit!(Layer2Born {
+            layer2_index,
+            synthesis_hash,
+            layer1_range_start,
+            layer1_range_end,
+        });
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -381,6 +497,98 @@ pub struct SetPaused<'info> {
     pub authority: Signer<'info>,
 }
 
+#[derive(Accounts)]
+pub struct InitLayerIndex<'info> {
+    #[account(
+        seeds = [LOOKING_GLASS_SEED],
+        bump = looking_glass.bump,
+        has_one = authority @ OracleError::BadAuthority,
+    )]
+    pub looking_glass: Account<'info, LookingGlass>,
+
+    #[account(
+        init,
+        payer = authority,
+        space = 8 + LayerIndex::INIT_SPACE,
+        seeds = [LAYER_INDEX_SEED],
+        bump,
+    )]
+    pub layer_index: Account<'info, LayerIndex>,
+
+    #[account(mut)]
+    pub authority: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(layer1_index: u64)]
+pub struct SubmitLayer1<'info> {
+    #[account(
+        seeds = [LOOKING_GLASS_SEED],
+        bump = looking_glass.bump,
+        has_one = oracle_signer @ OracleError::BadSigner,
+    )]
+    pub looking_glass: Account<'info, LookingGlass>,
+
+    #[account(
+        mut,
+        seeds = [LAYER_INDEX_SEED],
+        bump = layer_index.bump,
+    )]
+    pub layer_index: Account<'info, LayerIndex>,
+
+    #[account(
+        init,
+        payer = payer,
+        space = 8 + SynthesisLayer1::INIT_SPACE,
+        seeds = [LAYER1_SEED, &layer1_index.to_le_bytes()],
+        bump,
+    )]
+    pub layer1: Account<'info, SynthesisLayer1>,
+
+    pub oracle_signer: Signer<'info>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(layer2_index: u64)]
+pub struct SubmitLayer2<'info> {
+    #[account(
+        seeds = [LOOKING_GLASS_SEED],
+        bump = looking_glass.bump,
+        has_one = oracle_signer @ OracleError::BadSigner,
+    )]
+    pub looking_glass: Account<'info, LookingGlass>,
+
+    #[account(
+        mut,
+        seeds = [LAYER_INDEX_SEED],
+        bump = layer_index.bump,
+    )]
+    pub layer_index: Account<'info, LayerIndex>,
+
+    #[account(
+        init,
+        payer = payer,
+        space = 8 + SynthesisLayer2::INIT_SPACE,
+        seeds = [LAYER2_SEED, &layer2_index.to_le_bytes()],
+        bump,
+    )]
+    pub layer2: Account<'info, SynthesisLayer2>,
+
+    pub oracle_signer: Signer<'info>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+}
+
 #[account]
 #[derive(InitSpace)]
 pub struct LookingGlass {
@@ -429,6 +637,58 @@ pub struct ProphecyBorn {
     pub prophecy_hash: [u8; 32],
 }
 
+#[account]
+#[derive(InitSpace)]
+pub struct LayerIndex {
+    pub next_layer1: u64,
+    pub next_layer2: u64,
+    pub last_layer1_hash: [u8; 32],
+    pub last_layer2_hash: [u8; 32],
+    pub bump: u8,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct SynthesisLayer1 {
+    pub layer1_index: u64,
+    pub locked_at: i64,
+    pub epoch_range_start: u64,
+    pub epoch_range_end: u64,
+    #[max_len(256)]
+    pub synthesis_uri: String,
+    pub synthesis_hash: [u8; 32],
+    pub bump: u8,
+}
+
+#[account]
+#[derive(InitSpace)]
+pub struct SynthesisLayer2 {
+    pub layer2_index: u64,
+    pub locked_at: i64,
+    pub layer1_range_start: u64,
+    pub layer1_range_end: u64,
+    #[max_len(256)]
+    pub synthesis_uri: String,
+    pub synthesis_hash: [u8; 32],
+    pub bump: u8,
+}
+
+#[event]
+pub struct Layer1Born {
+    pub layer1_index: u64,
+    pub synthesis_hash: [u8; 32],
+    pub epoch_range_start: u64,
+    pub epoch_range_end: u64,
+}
+
+#[event]
+pub struct Layer2Born {
+    pub layer2_index: u64,
+    pub synthesis_hash: [u8; 32],
+    pub layer1_range_start: u64,
+    pub layer1_range_end: u64,
+}
+
 #[error_code]
 pub enum OracleError {
     #[msg("Tick was called before the minimum interval elapsed.")]
@@ -447,6 +707,10 @@ pub enum OracleError {
     EpochMismatch,
     #[msg("Prophecy URI exceeds the maximum length.")]
     UriTooLong,
+    #[msg("Layer index does not match the expected next-index value.")]
+    LayerIndexMismatch,
+    #[msg("Layer range end must be >= range start.")]
+    InvalidLayerRange,
 }
 
 #[cfg(test)]
