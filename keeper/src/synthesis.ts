@@ -11,6 +11,7 @@ import {
   layer2Pda,
 } from "./anchor-client";
 import { log } from "./logger";
+import { extractAndStoreSafe, loadExtractorConfig } from "./extraction";
 
 // Layer 1 / Layer 2 synthesis runner. Triggered from the keeper main
 // loop after each successful submit_prophecy. Both layers gate behind
@@ -328,6 +329,21 @@ export async function fireLayer1(
     .signers([ctx.oracle, ctx.keeper])
     .rpc();
   log.system(`[layer1] on-chain tx ${txSignature.slice(0, 16)}…`);
+  // Phase 20A: claim extraction with a longer time window for
+  // syntheses (90 days). Fires after on-chain commit so the lock
+  // timestamp is the pre-commitment anchor.
+  void (async () => {
+    const ec = loadExtractorConfig();
+    if (ec.enabled) {
+      await extractAndStoreSafe.call(
+        null,
+        { ...ec, defaultTimeWindowDays: 90 },
+        "layer1",
+        layer1Index,
+        text
+      );
+    }
+  })();
   return {
     layer1Index,
     epochRange: [epochRangeStart, epochRangeEnd],
@@ -401,6 +417,21 @@ export async function fireLayer2(
     .signers([ctx.oracle, ctx.keeper])
     .rpc();
   log.system(`[layer2] on-chain tx ${txSignature.slice(0, 16)}…`);
+  // Phase 20A: claim extraction with the longest time window (180
+  // days) — Layer 2 covers ~5 days of upstream prophecies and the
+  // patterns it surfaces operate on a longer scoring horizon.
+  void (async () => {
+    const ec = loadExtractorConfig();
+    if (ec.enabled) {
+      await extractAndStoreSafe.call(
+        null,
+        { ...ec, defaultTimeWindowDays: 180 },
+        "layer2",
+        layer2Index,
+        text
+      );
+    }
+  })();
   return {
     layer2Index,
     layer1Range: [layer1RangeStart, layer1RangeEnd],

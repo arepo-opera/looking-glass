@@ -116,6 +116,34 @@ later than its locked_at timestamp; the chain enforces this.
 Verify any specific prophecy at:
   https://explorer.solana.com/address/EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu?cluster=devnet
 
+## Verification engine (Phase 20A: extraction live, scoring pending)
+
+The instrument's central claim — that prophecies from real-world
+data, structured by palindromic constraint, contain above-chance
+forecast quality — is empirical and falsifiable. Phase 20A
+extracts testable claims from each prophecy at lock time, before
+any external event referenced by the claim could occur. This is
+the pre-committed-criteria principle.
+
+Endpoints:
+- /api/claims/{type}/{index}  — pre-extracted testable claims for
+  one prophecy or synthesis. type ∈ {epoch, layer1, layer2}. The
+  document includes the prophecy text, the extractor model + version,
+  the extracted_at timestamp, and either an array of testable claims
+  or `is_abstract_only: true`.
+- /api/score/{type}/{index}  — scoring document, populated once
+  Phase 20B's scoring pass runs against the post-lock news window.
+  Currently 404 for every index.
+- /api/score/summary  — aggregate stats across all scored prophecies.
+  Currently returns zeros for resonance fields; populates as scoring
+  runs.
+
+Most prophecies contain zero testable claims because the oracle's
+voice is intentionally abstract. Those are labelled
+abstract_only and don't enter the scoring denominator. Verification
+applies only to the subset that contain concrete claims about
+events in the world.
+
 ## Source
 
 The full source for the Solana program, the keeper, and this

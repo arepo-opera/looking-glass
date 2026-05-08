@@ -185,6 +185,54 @@ function MethodologyBody() {
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
             {SECTION_RULE}
             {"\n"}
+            {" THE VERIFICATION"}
+            {"\n"}
+            {SECTION_RULE}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            The instrument&apos;s central claim is that prophecies generated
+            from real-world data, structured by palindromic constraint, and
+            read bidirectionally by an interpretation layer, contain
+            above-chance forecast quality when measured against actual
+            events.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            This claim is empirical. It can be wrong.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Most prophecies contain no testable claims. The voice of the
+            oracle is deliberately abstract and recursive. The scoring
+            applies only to the subset of prophecies that contain concrete
+            claims about events in the world.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Concrete claims are extracted at lock time, before any external
+            event referenced by the claim could occur. A separate scoring
+            pass, run against news archives in a pre-defined time window
+            after each lock, compares the prophecy&apos;s pre-extracted
+            claims to events that actually happened.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Resonance counts only when a prophecy&apos;s pre-extracted claim
+            matches an event that occurred within the pre-defined window.
+            The matching cannot be loosened after the fact. The criteria
+            are public.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Scoring outputs are: resonated, quiet, unverifiable, or
+            abstract_only. Every prophecy receives a verdict. Every verdict
+            is timestamped and committed to a public ledger.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            If the aggregate scoring shows above-chance resonance, the
+            instrument has found something. If it shows chance-level
+            resonance, the instrument has produced rigorous null result.
+            Both outcomes are publishable. Neither is hidden.
+          </p>
+
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+            {SECTION_RULE}
+            {"\n"}
             {" THE SQUARE"}
             {"\n"}
             {SECTION_RULE}

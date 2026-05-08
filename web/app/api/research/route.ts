@@ -158,6 +158,17 @@ export async function GET(_req: NextRequest) {
     skepticism_url:
       "https://sator-looking-glass-web.vercel.app/skepticism",
     archive_url: "https://sator-looking-glass-web.vercel.app/api/archive.json",
+    // Phase 20A — claim extraction is live; scoring (Phase 20B) is
+    // not yet running. Claims for an individual prophecy/synthesis
+    // come from /api/claims/{epoch|layer1|layer2}/{index}. Score
+    // documents at /api/score/{type}/{index}; aggregate at
+    // /api/score/summary.
+    claims_url_template:
+      "https://sator-looking-glass-web.vercel.app/api/claims/{type}/{index}",
+    score_url_template:
+      "https://sator-looking-glass-web.vercel.app/api/score/{type}/{index}",
+    score_summary_url:
+      "https://sator-looking-glass-web.vercel.app/api/score/summary",
     prophecy_corpus_stats: {
       total_prophecies: totalProphecies,
       average_length_chars: averageLength,

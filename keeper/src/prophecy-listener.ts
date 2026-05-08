@@ -6,6 +6,7 @@ import {
 import { log } from "./logger";
 import { generateProphecy, ProphecyInput } from "./prophecy-generator";
 import { submitProphecy } from "./submit";
+import { extractAndStoreSafe, loadExtractorConfig } from "./extraction";
 import type { SeedDisplay } from "./seeds/types";
 import type { LiveEvent } from "./sse-server";
 
@@ -165,6 +166,18 @@ export async function respondToProphecyRequest(
         ts: Math.floor(Date.now() / 1000),
       });
     }
+
+    // Phase 20A claim extraction. Fires AFTER on-chain submission so
+    // the lock timestamp is fixed before any claim is extracted —
+    // pre-committed criteria principle. Async fire-and-forget; the
+    // extractor catches its own errors so a Claude hiccup never
+    // blocks the next tick.
+    void extractAndStoreSafe(
+      loadExtractorConfig(),
+      "epoch",
+      epoch,
+      prophecy.text
+    );
   } catch (e: any) {
     const s = String(e?.message ?? e);
     if (s.includes("AlreadySubmitted")) {
