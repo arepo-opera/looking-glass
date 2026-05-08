@@ -210,30 +210,23 @@ export async function POST(
   if (!kvConfigured()) {
     return NextResponse.json(kvErrorResponse(), { status: 503 });
   }
+  // ANTHROPIC_API_KEY is only required for Mode B (server-side
+  // extraction). Mode A (caller-supplied doc) doesn't touch Anthropic.
   const apiKey = process.env.ANTHROPIC_API_KEY ?? "";
-  if (!apiKey) {
-    return NextResponse.json(
-      {
-        error: "extraction not configured",
-        detail: "ANTHROPIC_API_KEY env var is unset on this deployment.",
-      },
-      { status: 503 }
-    );
-  }
 
-  let body: { prophecy_text?: string; time_window_days?: number };
+  let body: {
+    prophecy_text?: string;
+    time_window_days?: number;
+    doc?: Partial<ClaimsDocument>;
+  };
   try {
-    body = (await req.json()) as { prophecy_text?: string; time_window_days?: number };
+    body = (await req.json()) as typeof body;
   } catch {
     return NextResponse.json(
-      { error: "body must be JSON {prophecy_text: string}" },
-      { status: 400 }
-    );
-  }
-  const prophecyText = (body.prophecy_text ?? "").trim();
-  if (prophecyText.length === 0) {
-    return NextResponse.json(
-      { error: "body.prophecy_text must be a non-empty string" },
+      {
+        error:
+          "body must be JSON: either {prophecy_text} (server extracts) or {doc} (pre-extracted claims doc)",
+      },
       { status: 400 }
     );
   }
@@ -252,7 +245,72 @@ export async function POST(
     }
   }
 
-  // Default windows: 30 / 90 / 180 for epoch / layer1 / layer2.
+  // -------- Mode A: pre-extracted doc --------
+  // Caller did the extraction with their own key (e.g. backfill driver
+  // running locally) and POSTs the resulting claims document. Server
+  // validates schema + content-binds via prophecy_text hash, stores.
+  if (body.doc) {
+    const d = body.doc;
+    if (typeof d.prophecy_text !== "string" || d.prophecy_text.length === 0) {
+      return NextResponse.json(
+        { error: "doc.prophecy_text must be a non-empty string" },
+        { status: 400 }
+      );
+    }
+    if (!Array.isArray(d.extracted_claims)) {
+      return NextResponse.json(
+        { error: "doc.extracted_claims must be an array" },
+        { status: 400 }
+      );
+    }
+    const promptHash = keccak_256(d.prophecy_text);
+    const doc = {
+      type: type as "epoch" | "layer1" | "layer2",
+      index: idxNum,
+      extracted_at_ts: d.extracted_at_ts ?? Math.floor(Date.now() / 1000),
+      extractor_model: d.extractor_model ?? EXTRACTOR_MODEL,
+      extractor_version: d.extractor_version ?? EXTRACTOR_VERSION,
+      prophecy_text: d.prophecy_text,
+      prophecy_text_hash: promptHash,
+      extracted_claims: d.extracted_claims,
+      untestable_residue: d.untestable_residue ?? "",
+      is_abstract_only:
+        d.is_abstract_only ?? d.extracted_claims.length === 0,
+    };
+    try {
+      await kvSet(key, JSON.stringify(doc), CLAIMS_TTL_SECONDS);
+    } catch (e: any) {
+      return NextResponse.json(
+        { error: "kv write failed", detail: String(e?.message ?? e) },
+        { status: 502 }
+      );
+    }
+    return NextResponse.json(doc, { status: 201 });
+  }
+
+  // -------- Mode B: server-side extraction --------
+  // Caller supplies prophecy_text only; server runs extractor with its
+  // ANTHROPIC_API_KEY env var (must be set on this deployment).
+  const prophecyText = (body.prophecy_text ?? "").trim();
+  if (prophecyText.length === 0) {
+    return NextResponse.json(
+      {
+        error:
+          "supply either {prophecy_text} for server-side extraction or {doc} with a pre-extracted claims document",
+      },
+      { status: 400 }
+    );
+  }
+  if (!apiKey) {
+    return NextResponse.json(
+      {
+        error: "extraction not configured",
+        detail:
+          "ANTHROPIC_API_KEY env var is unset on this deployment. Use Mode A: POST {doc: <pre-extracted ClaimsDocument>} instead.",
+      },
+      { status: 503 }
+    );
+  }
   const defaultWindow =
     type === "layer2" ? 180 : type === "layer1" ? 90 : 30;
   const windowDays =
@@ -269,10 +327,6 @@ export async function POST(
       { status: 502 }
     );
   }
-  // Bind the prophecy_text into the stored doc by hashing — content-
-  // address the extraction so a downstream verifier can confirm the
-  // claims were extracted from this exact text and not a tampered
-  // version. The hash is exposed in the response.
   const promptHash = keccak_256(prophecyText);
   const doc: ClaimsDocument & { prophecy_text_hash: string } = {
     type: type as "epoch" | "layer1" | "layer2",
