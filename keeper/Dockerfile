@@ -4,6 +4,10 @@
 # Dockerfile reads from both keeper/ and shared/. On Railway: leave the
 # service's "Root Directory" blank and set "Dockerfile Path" to
 # `keeper/Dockerfile`.
+#
+# Cache-bust 2026-05-08: Railway deploy was stuck on pre-Phase-18 image
+# despite a no-op trigger commit. Touching the Dockerfile invalidates the
+# `deps`/`builder` layer cache so the next deploy rebuilds from source.
 
 FROM node:20-bookworm-slim AS deps
 
