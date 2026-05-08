@@ -36,6 +36,46 @@ function epochSquarePda(epoch: number): PublicKey {
   )[0];
 }
 
+function layerIndexPda(): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("layer_index")],
+    PROGRAM_ID
+  )[0];
+}
+
+function layer1Pda(idx: number): PublicKey {
+  const buf = Buffer.alloc(8);
+  buf.writeBigUInt64LE(BigInt(idx));
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("layer1"), buf],
+    PROGRAM_ID
+  )[0];
+}
+
+function layer2Pda(idx: number): PublicKey {
+  const buf = Buffer.alloc(8);
+  buf.writeBigUInt64LE(BigInt(idx));
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("layer2"), buf],
+    PROGRAM_ID
+  )[0];
+}
+
+const LAYER1_RETURN_LIMIT = 10;
+const LAYER2_RETURN_LIMIT = 5;
+
+interface LayerEntryOut {
+  layer1_index?: number;
+  layer2_index?: number;
+  locked_at: string | null;
+  epoch_range?: [number, number];
+  layer1_range?: [number, number];
+  synthesis_text: string;
+  synthesis_hash: string | null;
+  synthesis_uri: string;
+  pda: string;
+}
+
 function decodeUri(uri: string): string {
   if (!uri || !uri.startsWith("inline:")) return "";
   try {
@@ -156,19 +196,140 @@ export async function GET(req: NextRequest) {
 
   const prophecies = entries.filter((e): e is ArchiveEntry => e !== null);
 
+  // ---- Layer 1 / Layer 2 syntheses --------------------------------------
+  //
+  // Pull the LayerIndex PDA. If it doesn't exist yet, the program revision
+  // that introduced it isn't deployed and the layers are still inactive —
+  // arrays stay empty and the layer index fields stay null.
+  let currentLayer1Index: number | null = null;
+  let currentLayer2Index: number | null = null;
+  let layer1Out: LayerEntryOut[] = [];
+  let layer2Out: LayerEntryOut[] = [];
+  try {
+    const liAcc: any = await (program.account as any).layerIndex.fetch(
+      layerIndexPda()
+    );
+    const nextL1 = Number(liAcc.nextLayer1);
+    const nextL2 = Number(liAcc.nextLayer2);
+    currentLayer1Index = nextL1 - 1; // most-recent index that exists
+    currentLayer2Index = nextL2 - 1;
+
+    if (nextL1 > 0) {
+      const start = Math.max(0, nextL1 - LAYER1_RETURN_LIMIT);
+      const indices: number[] = [];
+      for (let i = nextL1 - 1; i >= start; i--) indices.push(i);
+      layer1Out = (
+        await Promise.all(
+          indices.map(async (idx): Promise<LayerEntryOut | null> => {
+            try {
+              const pda = layer1Pda(idx);
+              const acc: any = await (
+                program.account as any
+              ).synthesisLayer1.fetch(pda);
+              const uri: string = acc.synthesisUri ?? "";
+              let text = "";
+              if (uri) {
+                try {
+                  const r = await fetch(uri);
+                  if (r.ok) {
+                    const body = (await r.json()) as { text?: string };
+                    text = body.text ?? "";
+                  }
+                } catch {
+                  /* swallow — synthesis storage may be 503/down */
+                }
+              }
+              const lockedAt = Number(acc.lockedAt);
+              const hashBytes: number[] | undefined = acc.synthesisHash;
+              return {
+                layer1_index: Number(acc.layer1Index),
+                locked_at:
+                  lockedAt > 0
+                    ? new Date(lockedAt * 1000).toISOString()
+                    : null,
+                epoch_range: [
+                  Number(acc.epochRangeStart),
+                  Number(acc.epochRangeEnd),
+                ],
+                synthesis_text: text,
+                synthesis_hash:
+                  hashBytes && hashBytes.length === 32
+                    ? bytesToHex(hashBytes)
+                    : null,
+                synthesis_uri: uri,
+                pda: pda.toBase58(),
+              };
+            } catch {
+              return null;
+            }
+          })
+        )
+      ).filter((e): e is LayerEntryOut => e !== null);
+    }
+
+    if (nextL2 > 0) {
+      const start = Math.max(0, nextL2 - LAYER2_RETURN_LIMIT);
+      const indices: number[] = [];
+      for (let i = nextL2 - 1; i >= start; i--) indices.push(i);
+      layer2Out = (
+        await Promise.all(
+          indices.map(async (idx): Promise<LayerEntryOut | null> => {
+            try {
+              const pda = layer2Pda(idx);
+              const acc: any = await (
+                program.account as any
+              ).synthesisLayer2.fetch(pda);
+              const uri: string = acc.synthesisUri ?? "";
+              let text = "";
+              if (uri) {
+                try {
+                  const r = await fetch(uri);
+                  if (r.ok) {
+                    const body = (await r.json()) as { text?: string };
+                    text = body.text ?? "";
+                  }
+                } catch {
+                  /* swallow */
+                }
+              }
+              const lockedAt = Number(acc.lockedAt);
+              const hashBytes: number[] | undefined = acc.synthesisHash;
+              return {
+                layer2_index: Number(acc.layer2Index),
+                locked_at:
+                  lockedAt > 0
+                    ? new Date(lockedAt * 1000).toISOString()
+                    : null,
+                layer1_range: [
+                  Number(acc.layer1RangeStart),
+                  Number(acc.layer1RangeEnd),
+                ],
+                synthesis_text: text,
+                synthesis_hash:
+                  hashBytes && hashBytes.length === 32
+                    ? bytesToHex(hashBytes)
+                    : null,
+                synthesis_uri: uri,
+                pda: pda.toBase58(),
+              };
+            } catch {
+              return null;
+            }
+          })
+        )
+      ).filter((e): e is LayerEntryOut => e !== null);
+    }
+  } catch {
+    /* LayerIndex PDA not present — layers inactive, arrays stay empty */
+  }
+
   const body = {
     project: "SATOR LOOKING GLASS",
     program_id: PROGRAM_ID_STR,
     explorer: `https://explorer.solana.com/address/${PROGRAM_ID_STR}?cluster=devnet`,
     schema_version: 2,
     current_epoch: currentEpoch,
-    // Layer indices land here once Layer 1 / Layer 2 begin firing.
-    // Both layers require the program revision that adds
-    // SynthesisLayer1 / SynthesisLayer2 PDAs + submit_layer1 /
-    // submit_layer2 instructions; until that lands these stay null
-    // and the synthesis arrays below stay empty. Schema_version 2 is
-    // bumped now so clients can integrate against the stable shape
-    // before the first synthesis fires.
+    // Layer indices populated below from on-chain LayerIndex PDA.
     current_layer1_index: null as number | null,
     current_layer2_index: null as number | null,
     fetched_at: new Date().toISOString(),
@@ -189,9 +350,11 @@ export async function GET(req: NextRequest) {
     // is the authoritative key going forward; `prophecies` stays as a
     // back-compat alias for v1 consumers.
     atomic_prophecies: prophecies,
-    layer1_syntheses: [] as unknown[],
-    layer2_meta_syntheses: [] as unknown[],
+    layer1_syntheses: layer1Out,
+    layer2_meta_syntheses: layer2Out,
   };
+  body.current_layer1_index = currentLayer1Index;
+  body.current_layer2_index = currentLayer2Index;
 
   return NextResponse.json(body, {
     headers: {

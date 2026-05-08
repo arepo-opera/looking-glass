@@ -21,12 +21,30 @@ export interface Prophecy {
   glyphs: string[][];
 }
 
+export interface Layer1Entry {
+  layer1_index: number;
+  locked_at: string | null;
+  epoch_range: [number, number];
+  synthesis_text: string;
+  synthesis_hash?: string;
+}
+
+export interface Layer2Entry {
+  layer2_index: number;
+  locked_at: string | null;
+  layer1_range: [number, number];
+  synthesis_text: string;
+  synthesis_hash?: string;
+}
+
 export interface OracleState {
   status: Status;
   epoch: number;
   seeds: SeedReadout[];
   glyphs: string[][];
   prophecies: Prophecy[];
+  layer1Entries: Layer1Entry[];
+  layer2Entries: Layer2Entry[];
   nextTickSeconds: number;
   programId: string;
   blockHeight: number;
@@ -322,6 +340,8 @@ export function useMockOracle(): OracleState {
     seeds,
     glyphs,
     prophecies,
+    layer1Entries: [],
+    layer2Entries: [],
     nextTickSeconds,
     programId: PROGRAM_ID,
     blockHeight,

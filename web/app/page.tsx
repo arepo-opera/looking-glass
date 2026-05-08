@@ -1,7 +1,7 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { useMockOracle, OracleState } from "@/lib/mock-events";
+import { OracleState } from "@/lib/mock-events";
 import { useRealOracle } from "@/lib/real-oracle";
 import { TopBar } from "@/components/TopBar";
 import { SeedStream } from "@/components/SeedStream";
@@ -11,11 +11,6 @@ import { SynthesisLog } from "@/components/SynthesisLog";
 import { BottomBar } from "@/components/BottomBar";
 import { CRTOverlay } from "@/components/effects/CRTOverlay";
 import { LoreDocument } from "@/components/LoreDocument";
-
-function MockDashboard() {
-  const oracle = useMockOracle();
-  return <Dashboard oracle={oracle} />;
-}
 
 function LiveDashboard() {
   const oracle = useRealOracle();
@@ -56,10 +51,15 @@ function Dashboard({ oracle }: { oracle: OracleState }) {
             <div className="flex-1 min-h-0 overflow-hidden">
               <ProphecyLog prophecies={o.prophecies} />
             </div>
-            {/* SYNTHESIS.LOG region — Layer 1 + Layer 2 previews. Empty
-                state until the on-chain synthesis layers begin firing. */}
+            {/* SYNTHESIS.LOG region — Layer 1 + Layer 2 previews. Renders
+                from layer1Entries / layer2Entries which come from SSE
+                (layer1-born / layer2-born) plus an initial hydrate of
+                /api/archive.json. */}
             <div className="shrink-0 border-t border-phosphor-dim">
-              <SynthesisLog />
+              <SynthesisLog
+                layer1Entries={o.layer1Entries}
+                layer2Entries={o.layer2Entries}
+              />
             </div>
           </aside>
         </main>
@@ -75,16 +75,13 @@ function Dashboard({ oracle }: { oracle: OracleState }) {
   );
 }
 
-function PageInner() {
-  const params = useSearchParams();
-  const live = params.get("live") === "1";
-  return live ? <LiveDashboard /> : <MockDashboard />;
-}
-
+// Live mode is now the default — there is no mock path. The dev-stub
+// `?live=1` gate from the early phases is gone; navigating from
+// /archive back to / no longer reverts the dashboard to mock data.
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <PageInner />
+      <LiveDashboard />
     </Suspense>
   );
 }

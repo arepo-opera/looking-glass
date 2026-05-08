@@ -3,7 +3,17 @@ import { useEffect, useRef, useState } from "react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
 import idl from "../../shared/looking_glass.json";
-import type { OracleState, Prophecy, SeedReadout, Status } from "./mock-events";
+import type {
+  Layer1Entry,
+  Layer2Entry,
+  OracleState,
+  Prophecy,
+  SeedReadout,
+  Status,
+} from "./mock-events";
+
+const LAYER1_DEPTH = 20;
+const LAYER2_DEPTH = 5;
 
 const RPC_URL =
   process.env.NEXT_PUBLIC_RPC_URL ?? "https://api.devnet.solana.com";
@@ -76,7 +86,28 @@ interface ProphecyEvent {
   hash: string;
   ts: number;
 }
-type LiveEvent = SeedsEvent | StatusEvent | ProphecyEvent;
+interface Layer1BornEvent {
+  type: "layer1-born";
+  layer1_index: number;
+  epoch_range: [number, number];
+  synthesis_uri: string;
+  synthesis_hash: string;
+  ts: number;
+}
+interface Layer2BornEvent {
+  type: "layer2-born";
+  layer2_index: number;
+  layer1_range: [number, number];
+  synthesis_uri: string;
+  synthesis_hash: string;
+  ts: number;
+}
+type LiveEvent =
+  | SeedsEvent
+  | StatusEvent
+  | ProphecyEvent
+  | Layer1BornEvent
+  | Layer2BornEvent;
 
 export function useRealOracle(): OracleState {
   const [status, setStatus] = useState<Status>("GATHERING");
@@ -86,6 +117,8 @@ export function useRealOracle(): OracleState {
     Array.from({ length: 5 }, () => Array(5).fill(" "))
   );
   const [prophecies, setProphecies] = useState<Prophecy[]>([]);
+  const [layer1Entries, setLayer1Entries] = useState<Layer1Entry[]>([]);
+  const [layer2Entries, setLayer2Entries] = useState<Layer2Entry[]>([]);
   const [nextTickSeconds, setNextTickSeconds] = useState(180);
   const [blockHeight, setBlockHeight] = useState(0);
   const [rpcOk, setRpcOk] = useState(true);
@@ -286,6 +319,43 @@ export function useRealOracle(): OracleState {
     }
   }
 
+  // One-time hydrate of layer1/layer2 history from /api/archive.json so a
+  // visitor landing AFTER syntheses have already fired sees them. SSE
+  // delivers only events that arrive during the session; this fills the
+  // backlog. Subsequent layer{1,2}-born events update incrementally.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/archive.json?limit=1");
+        if (!r.ok) return;
+        const body = (await r.json()) as {
+          layer1_syntheses?: Layer1Entry[];
+          layer2_meta_syntheses?: Layer2Entry[];
+        };
+        if (cancelled) return;
+        const l1 = (body.layer1_syntheses ?? [])
+          .slice(0, LAYER1_DEPTH)
+          .sort((a, b) => b.layer1_index - a.layer1_index);
+        const l2 = (body.layer2_meta_syntheses ?? [])
+          .slice(0, LAYER2_DEPTH)
+          .sort((a, b) => b.layer2_index - a.layer2_index);
+        if (l1.length > 0) setLayer1Entries(l1);
+        if (l2.length > 0) setLayer2Entries(l2);
+        // eslint-disable-next-line no-console
+        console.info(
+          `[lg] layer hydrate: ${l1.length} layer1 + ${l2.length} layer2 entries`
+        );
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn("[lg] layer hydrate failed", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Hydrate on mount + every 60s as a safety net for the rare case where an
   // SSE update is missed (network blip, server restart between status pings).
   useEffect(() => {
@@ -434,6 +504,96 @@ export function useRealOracle(): OracleState {
                 void pullEpoch(data.epoch, { setGlyphs: false });
               }
               break;
+            case "layer1-born": {
+              const d = data as any;
+              const uri: string = d.synthesis_uri ?? "";
+              const idx = Number(d.layer1_index ?? 0);
+              const range: [number, number] =
+                Array.isArray(d.epoch_range) && d.epoch_range.length === 2
+                  ? [Number(d.epoch_range[0]), Number(d.epoch_range[1])]
+                  : [0, 0];
+              const lockedAt = d.ts
+                ? new Date(Number(d.ts) * 1000).toISOString()
+                : null;
+              // eslint-disable-next-line no-console
+              console.info(
+                `[lg] layer1-born idx=${idx} range=EP.${range[0]}-EP.${range[1]} uri=${uri}`
+              );
+              void (async () => {
+                let text = "";
+                try {
+                  const r = await fetch(uri);
+                  if (r.ok) {
+                    const body = (await r.json()) as { text?: string };
+                    text = body.text ?? "";
+                  } else {
+                    // eslint-disable-next-line no-console
+                    console.warn(
+                      `[lg] layer1 fetch returned ${r.status} for ${uri}`
+                    );
+                  }
+                } catch (err) {
+                  // eslint-disable-next-line no-console
+                  console.warn(`[lg] layer1 fetch failed`, err);
+                }
+                setLayer1Entries((prev) => {
+                  const filtered = prev.filter((e) => e.layer1_index !== idx);
+                  const next: Layer1Entry = {
+                    layer1_index: idx,
+                    locked_at: lockedAt,
+                    epoch_range: range,
+                    synthesis_text: text,
+                    synthesis_hash: d.synthesis_hash,
+                  };
+                  return [next, ...filtered]
+                    .sort((a, b) => b.layer1_index - a.layer1_index)
+                    .slice(0, LAYER1_DEPTH);
+                });
+              })();
+              break;
+            }
+            case "layer2-born": {
+              const d = data as any;
+              const uri: string = d.synthesis_uri ?? "";
+              const idx = Number(d.layer2_index ?? 0);
+              const range: [number, number] =
+                Array.isArray(d.layer1_range) && d.layer1_range.length === 2
+                  ? [Number(d.layer1_range[0]), Number(d.layer1_range[1])]
+                  : [0, 0];
+              const lockedAt = d.ts
+                ? new Date(Number(d.ts) * 1000).toISOString()
+                : null;
+              // eslint-disable-next-line no-console
+              console.info(
+                `[lg] layer2-born idx=${idx} range=L1.${range[0]}-L1.${range[1]} uri=${uri}`
+              );
+              void (async () => {
+                let text = "";
+                try {
+                  const r = await fetch(uri);
+                  if (r.ok) {
+                    const body = (await r.json()) as { text?: string };
+                    text = body.text ?? "";
+                  }
+                } catch {
+                  /* swallow */
+                }
+                setLayer2Entries((prev) => {
+                  const filtered = prev.filter((e) => e.layer2_index !== idx);
+                  const next: Layer2Entry = {
+                    layer2_index: idx,
+                    locked_at: lockedAt,
+                    layer1_range: range,
+                    synthesis_text: text,
+                    synthesis_hash: d.synthesis_hash,
+                  };
+                  return [next, ...filtered]
+                    .sort((a, b) => b.layer2_index - a.layer2_index)
+                    .slice(0, LAYER2_DEPTH);
+                });
+              })();
+              break;
+            }
             default:
               // eslint-disable-next-line no-console
               console.warn("[lg] SSE: unknown event type", (data as any)?.type);
@@ -595,6 +755,8 @@ export function useRealOracle(): OracleState {
     seeds,
     glyphs,
     prophecies,
+    layer1Entries,
+    layer2Entries,
     nextTickSeconds,
     programId: PROGRAM_ID_STR,
     blockHeight,
