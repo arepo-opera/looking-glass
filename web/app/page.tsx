@@ -7,6 +7,7 @@ import { TopBar } from "@/components/TopBar";
 import { SeedStream } from "@/components/SeedStream";
 import { SatorSquare3D } from "@/components/SatorSquare3D";
 import { ProphecyLog } from "@/components/ProphecyLog";
+import { SynthesisLog } from "@/components/SynthesisLog";
 import { BottomBar } from "@/components/BottomBar";
 import { CRTOverlay } from "@/components/effects/CRTOverlay";
 import { LoreDocument } from "@/components/LoreDocument";
@@ -51,8 +52,15 @@ function Dashboard({ oracle }: { oracle: OracleState }) {
           <aside className="order-2 md:order-1 w-full md:w-1/4 md:border-r border-phosphor-dim border-t md:border-t-0 min-w-0">
             <SeedStream seeds={o.seeds} />
           </aside>
-          <aside className="order-3 w-full md:w-1/4 border-t md:border-t-0 border-phosphor-dim min-w-0">
-            <ProphecyLog prophecies={o.prophecies} />
+          <aside className="order-3 w-full md:w-1/4 border-t md:border-t-0 border-phosphor-dim min-w-0 flex flex-col">
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <ProphecyLog prophecies={o.prophecies} />
+            </div>
+            {/* SYNTHESIS.LOG region — Layer 1 + Layer 2 previews. Empty
+                state until the on-chain synthesis layers begin firing. */}
+            <div className="shrink-0 border-t border-phosphor-dim">
+              <SynthesisLog />
+            </div>
           </aside>
         </main>
         <BottomBar

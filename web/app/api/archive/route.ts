@@ -160,23 +160,37 @@ export async function GET(req: NextRequest) {
     project: "SATOR LOOKING GLASS",
     program_id: PROGRAM_ID_STR,
     explorer: `https://explorer.solana.com/address/${PROGRAM_ID_STR}?cluster=devnet`,
-    schema_version: 1,
+    schema_version: 2,
     current_epoch: currentEpoch,
+    // Layer indices land here once Layer 1 / Layer 2 begin firing.
+    // Both layers require the program revision that adds
+    // SynthesisLayer1 / SynthesisLayer2 PDAs + submit_layer1 /
+    // submit_layer2 instructions; until that lands these stay null
+    // and the synthesis arrays below stay empty. Schema_version 2 is
+    // bumped now so clients can integrate against the stable shape
+    // before the first synthesis fires.
+    current_layer1_index: null as number | null,
+    current_layer2_index: null as number | null,
     fetched_at: new Date().toISOString(),
     pagination: {
       from: startEpoch,
       to: endEpoch,
       limit,
-      next_from:
-        endEpoch > 1
-          ? endEpoch - 1
-          : null,
+      next_from: endEpoch > 1 ? endEpoch - 1 : null,
     },
     notes: {
       seeds_field:
         "seeds at locking are not retained on-chain. only their keccak digests are stored (forward_digest, backward_digest). reserved for a future schema bump that persists raw seeds via Arweave.",
+      synthesis_layers:
+        "layer1_syntheses and layer2_meta_syntheses are reserved fields that populate once the respective layers begin firing. layer 1 fires every ~5 hours; layer 2 every ~5 days.",
     },
     prophecies,
+    // Renamed alias for clarity in the v2 schema. atomic_prophecies
+    // is the authoritative key going forward; `prophecies` stays as a
+    // back-compat alias for v1 consumers.
+    atomic_prophecies: prophecies,
+    layer1_syntheses: [] as unknown[],
+    layer2_meta_syntheses: [] as unknown[],
   };
 
   return NextResponse.json(body, {

@@ -137,6 +137,54 @@ function MethodologyBody() {
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
             {SECTION_RULE}
             {"\n"}
+            {" THE LAYERS"}
+            {"\n"}
+            {SECTION_RULE}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            The instrument operates at three temporal scales
+            simultaneously.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Layer 0 is the atomic reading. Every three minutes, five
+            seeds from contemporaneous reality are arranged into a
+            palindromic 5x5 structure and read forward and backward
+            by an interpretation layer. The result is a single
+            three-sentence prophecy committed to the chain.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Layer 1 is the synthesis reading. Every five hours, the
+            most recent one hundred atomic prophecies are read together
+            as an accumulated text. A second interpretation pass
+            identifies recurring motifs, drift in voice, and
+            through-lines that only emerge when the readings are held
+            collectively. The synthesis is committed to the chain
+            alongside the source prophecies.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Layer 2 is the meta-synthesis reading. Every five days,
+            the most recent twenty-five syntheses are read together.
+            A third interpretation pass identifies the patterns in
+            the patterns — cycles across days, drifts across the
+            scale at which atomic readings cannot register them.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            The three layers operate at scales that are progressively
+            inaccessible to human working memory. The atomic layer
+            produces approximately five hundred prophecies per day. The
+            synthesis layer reads across two thousand five hundred
+            atomic prophecies in a single pass. The meta-synthesis
+            layer reads across sixty-two thousand atomic prophecies
+            through twenty-five intermediate syntheses. No human team
+            can hold sixty-two thousand prophecies in working memory.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            This is what the apparatus has been waiting for.
+          </p>
+
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+            {SECTION_RULE}
+            {"\n"}
             {" THE SQUARE"}
             {"\n"}
             {SECTION_RULE}

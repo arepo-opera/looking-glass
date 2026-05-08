@@ -145,6 +145,14 @@ export async function GET(_req: NextRequest) {
         "corpus stats are computed over the most recent sample_window epochs to keep the endpoint within serverless budget. full archive is at /api/archive.json with pagination.",
     },
     verification_engine_status: "not_yet_operational",
+    // Synthesis-layer indices. Both null until the program revision
+    // that adds submit_layer1 / submit_layer2 lands and the keeper
+    // begins firing. Estimated next-fire timestamps are also null
+    // until the cadence has been observed.
+    current_layer1_index: null as number | null,
+    current_layer2_index: null as number | null,
+    next_layer1_estimated_at: null as string | null,
+    next_layer2_estimated_at: null as string | null,
     methodology_url:
       "https://sator-looking-glass-web.vercel.app/methodology",
     skepticism_url:

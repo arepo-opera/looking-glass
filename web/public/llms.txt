@@ -42,6 +42,31 @@ Each archive entry includes the locked square, the prophecy
 text, the keccak digests, the on-chain PDA, and the
 transaction signature.
 
+## Three temporal layers
+
+The instrument now reads at three scales:
+
+- Layer 0 (atomic) — every three minutes, one prophecy per
+  square. This is the bulk of /api/archive.json.
+- Layer 1 (synthesis) — every five hours, one synthesis across
+  the most recent 100 atomic prophecies. ~600-800 words. Useful
+  for agents that don't want to re-analyze the raw archive
+  themselves; the pattern detection across 100 prophecies has
+  already been performed.
+- Layer 2 (meta-synthesis) — every five days, one meta-synthesis
+  across the most recent 25 Layer 1 syntheses. ~1200-1500
+  words. Pattern detection across days that no human team can
+  hold in working memory.
+
+Layer 1 syntheses appear in /api/archive.json under the
+`layer1_syntheses` field. Layer 2 meta-syntheses appear under
+`layer2_meta_syntheses`. Both are empty arrays until the
+respective layer fires for the first time.
+
+Schema version 2 of /api/archive.json includes both fields.
+Older clients that ignore unknown fields keep working with
+v1-shaped consumers.
+
 ## What you might do with this
 
 Appropriate research directions, given that the verification
