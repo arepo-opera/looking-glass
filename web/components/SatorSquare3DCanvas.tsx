@@ -964,7 +964,13 @@ export function SatorSquare3DCanvas({
 }: CanvasProps) {
   return (
     <Canvas
-      camera={{ position: [0, 0, 10.0], fov: 35 }}
+      // Wider FOV than the original 35° so the 5×5 grid has margin on all
+      // sides regardless of container aspect ratio. At fov=45° the
+      // vertical span at z=10 is ~8.3 world units, leaving ~30% margin
+      // around the ~5.5-unit cube — fits cleanly on phone-portrait
+      // (square container) and desktop alike. r3f's Canvas updates the
+      // projection matrix on container resize automatically.
+      camera={{ position: [0, 0, 10.0], fov: 45 }}
       style={{ width: "100%", height: "100%", background: CHARCOAL }}
       gl={{ antialias: true }}
     >

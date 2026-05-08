@@ -36,13 +36,16 @@ export function LoreDocument() {
 {RULE}
         </pre>
 
-        {/* Two-column flow at xl. Section headers and paragraphs each carry
-            break-inside-avoid so a header never orphans at the bottom of a
-            column and a single paragraph never splits across columns. */}
-        <div className="xl:columns-2 xl:gap-x-20 xl:mt-12 [&_p]:break-inside-avoid [&_pre]:break-inside-avoid">
+        {/* Two-column layout at xl, via CSS Grid with explicit column
+            placement. CSS columns produced overlapping headers and split
+            paragraphs at column boundaries; Grid lets us put each section
+            into a specific column and span the long technical disclosure
+            across both. Mobile/tablet (<xl) ignores the grid utilities
+            and gets normal block flow. */}
+        <div className="xl:grid xl:grid-cols-2 xl:gap-x-20 xl:mt-12">
 
-        {/* I. THE THEORY */}
-        <div id="theory" className="mt-12 xl:mt-0">
+        {/* I. THE THEORY → column 1 */}
+        <div id="theory" className="mt-12 xl:mt-0 xl:col-start-1 xl:row-start-1">
           <pre className="whitespace-pre m-0 text-phosphor-dim">
 {SECTION_RULE}{"\n"}
 {" I. THE THEORY"}{"\n"}
@@ -113,7 +116,8 @@ export function LoreDocument() {
         </div>
 
         {/* II. THE PROGRAM */}
-        <div id="program" className="mt-12">
+        {/* II. THE PROGRAM → column 2, top of grid */}
+        <div id="program" className="mt-12 xl:mt-0 xl:col-start-2 xl:row-start-1">
           <pre className="whitespace-pre m-0 text-phosphor-dim">
 {SECTION_RULE}{"\n"}
 {" II. THE PROGRAM"}{"\n"}
@@ -208,7 +212,10 @@ export function LoreDocument() {
         </div>
 
         {/* III. THE INSTRUMENT */}
-        <div id="instrument" className="mt-12">
+        {/* III. THE INSTRUMENT → spans both columns below, since it
+            contains the long PROGRAM ADDRESS line that would force-wrap
+            in a 60ch column. */}
+        <div id="instrument" className="mt-12 xl:col-span-2 xl:row-start-2 xl:max-w-[72ch] xl:mx-auto">
           <pre className="whitespace-pre m-0 text-phosphor-dim">
 {SECTION_RULE}{"\n"}
 {" III. THE INSTRUMENT"}{"\n"}

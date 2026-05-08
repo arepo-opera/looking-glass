@@ -27,10 +27,15 @@ function SkepticismBody() {
             {RULE}
           </pre>
 
-          {/* Two-column flow at xl. Section labels and paragraphs each
-              carry break-inside-avoid so OBJECTION headers don't orphan
-              and individual paragraphs don't split. */}
-          <div className="xl:columns-2 xl:gap-x-20 [&_p]:break-inside-avoid [&_pre]:break-inside-avoid">
+          {/* Two-column layout at xl, via CSS Grid with explicit column
+              buckets. CSS columns produced overlapping text and split
+              OBJECTION headers; Grid lets us cleanly partition the
+              objections between two stable columns. Below xl the layout
+              is normal block flow. */}
+          <div className="xl:grid xl:grid-cols-2 xl:gap-x-20">
+
+          {/* Column 1: intro + first three objections */}
+          <div className="xl:col-start-1 xl:row-start-1">
 
           <p className="mt-12 whitespace-pre-wrap m-0">
             This page exists because the project&apos;s claims, taken at
@@ -125,7 +130,12 @@ function SkepticismBody() {
             methodology to evolve. We will publish each iteration.
           </p>
 
-          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+          </div>{/* /column 1 */}
+
+          {/* Column 2: remaining two objections + how-to-test */}
+          <div className="xl:col-start-2 xl:row-start-1">
+
+          <pre className="mt-12 xl:mt-12 whitespace-pre m-0 text-phosphor-dim">
             {DIVIDER}
           </pre>
 
@@ -220,7 +230,8 @@ function SkepticismBody() {
             own.
           </p>
 
-          </div>{/* /two-column flow */}
+          </div>{/* /column 2 */}
+          </div>{/* /grid */}
 
           <p className="mt-[6em] italic font-serif m-0 whitespace-pre-wrap xl:max-w-[72ch] xl:mx-auto">
             <a

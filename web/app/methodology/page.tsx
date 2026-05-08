@@ -27,10 +27,15 @@ function MethodologyBody() {
             {RULE}
           </pre>
 
-          {/* Two-column flow at xl. Section headers, paragraphs, and
-              field-aligned <pre> tables each carry break-inside-avoid so
-              they stay coherent across column breaks. */}
-          <div className="xl:columns-2 xl:gap-x-20 [&_p]:break-inside-avoid [&_pre]:break-inside-avoid">
+          {/* Two-column layout at xl, via CSS Grid. Each column is an
+              explicit bucket of sections so headers can't orphan and
+              dividers stay aligned. PROGRAM ADDRESS pre at the end spans
+              both columns since its URLs would force-wrap in a 60ch
+              column. Mobile/tablet ignore the grid and stack normally. */}
+          <div className="xl:grid xl:grid-cols-2 xl:gap-x-20">
+
+          {/* Column 1: foundational mechanics — seeds → square → reading → loop */}
+          <div className="xl:col-start-1 xl:row-start-1">
 
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
             {SECTION_RULE}
@@ -158,7 +163,12 @@ function MethodologyBody() {
             alongside the present moment.
           </p>
 
-          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+          </div>{/* /column 1 */}
+
+          {/* Column 2: epistemics — determinism, verifiability, what's not built */}
+          <div className="xl:col-start-2 xl:row-start-1">
+
+          <pre className="mt-12 xl:mt-12 whitespace-pre m-0 text-phosphor-dim">
             {SECTION_RULE}
             {"\n"}
             {" WHAT IS DETERMINISTIC AND WHAT IS NOT"}
@@ -216,7 +226,11 @@ function MethodologyBody() {
             demonstrated.
           </p>
 
-          <pre className="mt-12 whitespace-pre m-0 text-phosphor-bright leading-[1.6]">
+          </div>{/* /column 2 */}
+
+          {/* PROGRAM ADDRESS spans both columns on row 2 — long URLs would
+              force-wrap in a 60ch column. */}
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-bright leading-[1.6] xl:col-span-2 xl:row-start-2 xl:max-w-[72ch] xl:mx-auto xl:w-full">
             {"  PROGRAM ADDRESS  "}
             <a
               href="https://explorer.solana.com/address/EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu?cluster=devnet"
@@ -272,7 +286,7 @@ function MethodologyBody() {
             </a>
           </pre>
 
-          </div>{/* /two-column flow */}
+          </div>{/* /grid */}
 
           <p className="mt-[6em] italic font-serif m-0 whitespace-pre-wrap xl:max-w-[72ch] xl:mx-auto">
             <a

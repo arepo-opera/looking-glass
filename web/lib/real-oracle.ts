@@ -98,14 +98,25 @@ export function useRealOracle(): OracleState {
   // Re-entry guard for fetchEpochSquare so an SSE storm can't fan out into
   // a cascade of in-flight RPCs against the same epoch.
   const epochInFlightRef = useRef<number | null>(null);
+  // Highest epoch we've successfully *fetched* a square for — used by
+  // pullEpoch as a "have we hydrated this one" guard. Updated by both the
+  // 60s periodic hydrate and SSE-driven pullEpoch calls.
   const lastFetchedEpochRef = useRef<number>(0);
-  // Local LOCKED override window. The keeper broadcasts status on a 30s
-  // timer and rarely catches the brief on-chain LOCKED state, so the cube's
-  // LOCKING animation would never fire. We trigger it locally off the
-  // epoch increment instead, holding status="LOCKED" for the duration of
-  // the scramble + flash + post-lock pause and then handing back to the
-  // server's most-recent status.
-  const lockOverrideTimeoutRef = useRef<number | null>(null);
+  // Highest epoch we've *animated* through. Separate from lastFetchedEpochRef
+  // so the 60s hydrate's silent fetches don't suppress the LOCKING
+  // animation when the next SSE event arrives — without this, the hydrate
+  // can race ahead and bump lastFetchedEpochRef before the SSE handler
+  // sees the new epoch, and the animation never fires for that lock.
+  // Initialized null so the very first observed epoch (mount) doesn't
+  // trigger a spurious animation.
+  const lastAnimatedEpochRef = useRef<number | null>(null);
+  // Local status override. The keeper broadcasts status on a 30s timer
+  // and almost never catches the brief on-chain SOLVING/LOCKED/READING
+  // window, so the dashboard cycles status locally off the epoch
+  // increment instead. The override fires through the four phases that
+  // match the cube's scramble→tumble→flash→settled timing, then hands
+  // back to the keeper's most-recent status.
+  const overrideTimeoutsRef = useRef<number[]>([]);
   const pendingServerStatusRef = useRef<Status | null>(null);
   // Liveness telemetry for the stability watchdog. Wall-clock timestamps
   // (Date.now()) — refs not state so we don't churn React on every event.
@@ -267,6 +278,41 @@ export function useRealOracle(): OracleState {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [programRef.current]);
 
+  // ---------- Status override (cube animation phases) --------------------
+  //
+  // Cube timing (from SatorSquare3DCanvas constants): scramble 2000ms +
+  // settle window 1500ms + flash 150ms + post-lock pause 250ms ≈ 3.9s.
+  // We add a READING tail so the status pill shows the full machine
+  // cycle the instrument goes through on every lock, then return to
+  // GATHERING (or whatever the keeper is reporting by then).
+  function clearStatusOverride() {
+    for (const t of overrideTimeoutsRef.current) window.clearTimeout(t);
+    overrideTimeoutsRef.current = [];
+  }
+  function runStatusOverride(serverStatus: Status) {
+    clearStatusOverride();
+    pendingServerStatusRef.current =
+      serverStatus === "LOCKED" ||
+      serverStatus === "SOLVING" ||
+      serverStatus === "READING"
+        ? "GATHERING"
+        : serverStatus;
+    setStatus("SOLVING");
+    overrideTimeoutsRef.current.push(
+      window.setTimeout(() => setStatus("LOCKED"), 2000)
+    );
+    overrideTimeoutsRef.current.push(
+      window.setTimeout(() => setStatus("READING"), 4500)
+    );
+    overrideTimeoutsRef.current.push(
+      window.setTimeout(() => {
+        setStatus(pendingServerStatusRef.current ?? "GATHERING");
+        pendingServerStatusRef.current = null;
+        overrideTimeoutsRef.current = [];
+      }, 10500)
+    );
+  }
+
   // ---------- SSE channel -------------------------------------------------
 
   useEffect(() => {
@@ -311,38 +357,39 @@ export function useRealOracle(): OracleState {
               break;
             case "status": {
               setEpoch(data.epoch);
-              // Reset the local countdown's deadline. The keeper's authoritative
-              // value is `nextTickSeconds` measured at `ts`; convert to an
-              // absolute wall-clock deadline so the local 1Hz ticker can derive
-              // the displayed countdown going forward.
-              tickDeadlineRef.current =
-                Date.now() + data.nextTickSeconds * 1000;
-              setNextTickSeconds(data.nextTickSeconds);
+              // Note: we deliberately do NOT update tickDeadlineRef from
+              // SSE here. The keeper's nextTickSeconds is computed at
+              // broadcast time and arrives out-of-phase with the local
+              // tick — overriding the deadline on each SSE event made
+              // the displayed countdown jump backwards every ~30s. The
+              // deadline is owned by hydrateFromChain (every 60s + on
+              // every observed epoch advance), which derives it from
+              // the on-chain lastTickTs.
               const epochAdvanced =
-                data.epoch > 0 && data.epoch > lastFetchedEpochRef.current;
+                lastAnimatedEpochRef.current !== null &&
+                data.epoch > 0 &&
+                data.epoch > lastAnimatedEpochRef.current;
+              if (lastAnimatedEpochRef.current === null && data.epoch > 0) {
+                // First observed epoch — record but don't animate.
+                lastAnimatedEpochRef.current = data.epoch;
+              }
               if (epochAdvanced) {
-                // Hydrate the new square + drive the LOCKING animation
-                // locally. Holding status="LOCKED" for ~4.5s lets the cube's
-                // scramble/settle/flash sequence run to completion before we
-                // hand control back to the keeper's status feed.
-                setStatus("LOCKED");
-                if (lockOverrideTimeoutRef.current !== null) {
-                  window.clearTimeout(lockOverrideTimeoutRef.current);
-                }
-                pendingServerStatusRef.current =
-                  data.status === "LOCKED" ? "GATHERING" : data.status;
-                lockOverrideTimeoutRef.current = window.setTimeout(() => {
-                  const next =
-                    pendingServerStatusRef.current ?? "GATHERING";
-                  setStatus(next);
-                  pendingServerStatusRef.current = null;
-                  lockOverrideTimeoutRef.current = null;
-                }, 4500);
+                lastAnimatedEpochRef.current = data.epoch;
+                // Phased status override matches the cube's animation
+                // timeline: SOLVING during scramble, LOCKED during
+                // tumble+flash, READING after lock, then hand back.
+                runStatusOverride(data.status);
+                // Refresh the on-chain countdown deadline immediately —
+                // the new tick just happened, so deadline = now + 180s.
+                tickDeadlineRef.current = Date.now() + 180_000;
                 void pullEpoch(data.epoch, { setGlyphs: true });
-              } else if (lockOverrideTimeoutRef.current !== null) {
-                // Don't clobber the local LOCKED override mid-animation —
-                // remember the latest server status and apply it when the
-                // override timer expires.
+                // Belt-and-suspenders: pull the authoritative lastTickTs
+                // from the LookingGlass PDA so the deadline is exact.
+                void hydrateFromChain();
+              } else if (overrideTimeoutsRef.current.length > 0) {
+                // Don't clobber an in-flight override — remember the
+                // latest server status and apply it when the override
+                // chain ends.
                 pendingServerStatusRef.current = data.status;
               } else {
                 setStatus(data.status);
@@ -388,16 +435,14 @@ export function useRealOracle(): OracleState {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sseEpoch]);
 
-  // Lock-override timeout is owned by component lifetime, not SSE
-  // reconnect — clearing it on every watchdog kick would cancel an
+  // Status-override timeouts are owned by component lifetime, not SSE
+  // reconnect — clearing them on every watchdog kick would cancel an
   // in-progress scramble animation.
   useEffect(() => {
     return () => {
-      if (lockOverrideTimeoutRef.current !== null) {
-        window.clearTimeout(lockOverrideTimeoutRef.current);
-        lockOverrideTimeoutRef.current = null;
-      }
+      clearStatusOverride();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ---------- Liveness watchdog + heartbeat ------------------------------
