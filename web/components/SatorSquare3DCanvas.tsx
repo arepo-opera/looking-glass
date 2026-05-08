@@ -463,6 +463,22 @@ function CubeRig({ glyphs, status }: SceneProps) {
     sweep: {
       lastHighlight: null as { r: number; c: number } | null,
     },
+    // GATHERING-phase signal-check flicker. Replaces the previous
+    // breathing-scale + slow-Y-drift ambient with a much rarer, more
+    // mechanical event: every 30-60s one random cell briefly dims its
+    // glyph plane and shakes 1px on x for ~120ms, like a vacuum tube
+    // reseating. The instrument waits at rest, but it isn't dead.
+    gatheringFlicker: {
+      active: false,
+      startMs: 0,
+      cell: null as { r: number; c: number } | null,
+      // First flicker 5-30s after first entering GATHERING; subsequent
+      // intervals are recomputed on each completion.
+      nextStartMs:
+        (typeof performance !== "undefined" ? performance.now() : 0) +
+        5_000 +
+        Math.random() * 25_000,
+    },
   });
 
   // Initial draw — force-load the SC font, then stamp every front canvas.
@@ -627,15 +643,75 @@ function CubeRig({ glyphs, status }: SceneProps) {
     const sg = squareGroupRef.current;
     if (!sg) return;
 
+    // If a GATHERING-phase flicker was in progress when status changed,
+    // restore the affected cell's plane material + position before the
+    // new phase starts writing to the canvas. Otherwise the cell can
+    // be left at opacity 0.6 / shaken position for the duration of the
+    // next phase.
+    {
+      const fk = stateRef.current.gatheringFlicker;
+      if (fk.active && fk.cell && cs !== "GATHERING") {
+        const { r, c } = fk.cell;
+        const plane = frontPlaneRefs.current[r][c];
+        const mat = plane?.material as THREE.MeshBasicMaterial | undefined;
+        const j = cellAttrs[r][c];
+        if (mat) mat.opacity = 1.0;
+        if (plane) plane.position.set(j.x, j.y, SLAB_D / 2 + 0.001);
+        fk.active = false;
+        fk.cell = null;
+      }
+    }
+
     if (cs === "GATHERING") {
-      const phase = (t / 4) % 1;
-      const breathe = 1.0 + 0.012 * 0.5 * (1 - Math.cos(phase * TWO_PI));
-      sg.scale.setScalar(breathe);
-      sg.rotation.y = 0.02 * Math.sin(t * (TWO_PI / 12));
-      // hold each row at its base rotation
+      // The cube is genuinely at rest — no breathing, no Y-drift. The
+      // CRT effects on top of the scene are still moving, but the
+      // instrument readout itself doesn't perform when there's nothing
+      // to read.
+      sg.scale.setScalar(1.0);
+      sg.rotation.y = 0;
       for (let r = 0; r < 5; r++) {
         const rg = rowRefs.current[r];
         if (rg) rg.rotation.x = stateRef.current.rowBaseRotation[r];
+      }
+
+      // Signal-check flicker: every 30-60s, one random cell dims and
+      // shakes microscopically. Two-ramp opacity curve (60ms down to
+      // 0.6, 60ms back to 1.0) plus a 1-pixel-equivalent x offset for
+      // the same window.
+      const fk = stateRef.current.gatheringFlicker;
+      if (!fk.active && now >= fk.nextStartMs) {
+        fk.active = true;
+        fk.startMs = now;
+        const r = Math.floor(Math.random() * 5);
+        const c = Math.floor(Math.random() * 5);
+        fk.cell = { r, c };
+      }
+      if (fk.active && fk.cell) {
+        const elapsed = now - fk.startMs;
+        const { r, c } = fk.cell;
+        const plane = frontPlaneRefs.current[r][c];
+        const mat = plane?.material as THREE.MeshBasicMaterial | undefined;
+        const j = cellAttrs[r][c];
+        if (elapsed >= 120) {
+          // Restore: opacity 1, position back to per-cell jitter.
+          if (mat) mat.opacity = 1.0;
+          if (plane) plane.position.set(j.x, j.y, SLAB_D / 2 + 0.001);
+          fk.active = false;
+          fk.cell = null;
+          fk.nextStartMs = now + 30_000 + Math.random() * 30_000;
+        } else if (mat && plane) {
+          let opacity: number;
+          if (elapsed < 60) {
+            opacity = 1.0 - 0.4 * (elapsed / 60);
+          } else {
+            opacity = 0.6 + 0.4 * ((elapsed - 60) / 60);
+          }
+          mat.opacity = opacity;
+          // 1 texture-pixel-equivalent x offset (matches the
+          // interference-burst scale unit but ⅓ the magnitude).
+          const pxScale = SLAB_W * 0.96 * (1 / TEXTURE_SIZE);
+          plane.position.set(j.x + pxScale, j.y, SLAB_D / 2 + 0.001);
+        }
       }
     } else if (cs === "SOLVING") {
       sg.scale.setScalar(1.0);
