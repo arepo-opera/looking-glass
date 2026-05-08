@@ -60,20 +60,35 @@ function shortTitle(t: string): string {
   return head.slice(0, 12) || "UNTITLED";
 }
 
+function diag(msg: string): void {
+  // Emit to stderr so Railway picks it up regardless of LOG_FORMAT,
+  // and prefix so the lines are easy to grep in deploy logs.
+  process.stderr.write(`[world] ${msg}\n`);
+}
+
 export async function fetchWorld(): Promise<SeedResult> {
   let stage = "init";
+  diag(`opening wikipedia REST poll → ${WIKI_URL.slice(0, 80)}…`);
   try {
     stage = "fetch";
     const resp = await fetch(WIKI_URL, {
       signal: AbortSignal.timeout(12_000),
       headers: WIKI_HEADERS,
     });
+    diag(`fetch returned status=${resp.status}`);
     if (!resp.ok) throw new Error(`wiki ${resp.status}`);
     stage = "parse";
     const data = (await resp.json()) as RcResponse;
     if (data.error) throw new Error(`wiki error: ${data.error.info}`);
     const changes = data.query?.recentchanges ?? [];
+    diag(`parsed payload: ${changes.length} recent changes returned`);
     if (changes.length === 0) throw new Error("wiki: empty results");
+    if (changes.length > 0) {
+      const first = changes[0];
+      diag(
+        `first event: ts=${first.timestamp} ns=${first.ns} title="${first.title?.slice(0, 60)}"`
+      );
+    }
 
     stage = "compute";
     const fiveMinAgo = Date.now() - 5 * 60 * 1000;
@@ -82,6 +97,9 @@ export async function fetchWorld(): Promise<SeedResult> {
       return Number.isFinite(t) && t >= fiveMinAgo;
     });
     const window = recent.length > 0 ? recent : changes.slice(0, 100);
+    diag(
+      `${recent.length} of ${changes.length} events fall in the last 5min window`
+    );
 
     // Dominant namespace
     const nsCount = new Map<number, number>();
@@ -138,10 +156,14 @@ export async function fetchWorld(): Promise<SeedResult> {
         ],
       },
     };
+    diag(
+      `success: dominant=${dominantLabel} velocity=${editVelocity.toFixed(2)}/min topTitle="${topTitle.slice(0, 40)}"`
+    );
     lastGood = { result, at: Date.now() };
     return result;
   } catch (e) {
     const detail = `wiki@${stage}: ${String((e as Error)?.message ?? e)}`;
+    diag(`FAILED at ${stage}: ${String((e as Error)?.message ?? e)}`);
     if (lastGood && Date.now() - lastGood.at < STALE_TTL_MS) {
       return {
         digest: lastGood.result.digest,
