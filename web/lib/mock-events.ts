@@ -1,7 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-export type Status = "GATHERING" | "SOLVING" | "LOCKED" | "READING";
+export type Status =
+  | "GATHERING"
+  | "WAITING"
+  | "SOLVING"
+  | "LOCKED"
+  | "READING";
 
 export interface SeedReadout {
   channel: string;

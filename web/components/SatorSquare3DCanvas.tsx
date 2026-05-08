@@ -123,7 +123,14 @@ const PHOSPHOR_LIGHT = 64;
 
 const FONT_URL = "/fonts/IMFellEnglishSC.ttf";
 
-type CubeState = "GATHERING" | "SOLVING" | "LOCKING" | "LOCKED" | "READING";
+type CubeState =
+  | "GATHERING"
+  | "DISSOLVING"
+  | "WAITING"
+  | "SOLVING"
+  | "LOCKING"
+  | "LOCKED"
+  | "READING";
 
 // Deterministic per-cell pseudo-random values seeded on row+column. The same
 // square renders the same jitter every frame — only when the locked square
@@ -444,6 +451,18 @@ function CubeRig({ glyphs, status }: SceneProps) {
         flashUntilMs: 0,
       }))
     ),
+    // Per-cell DISSOLVING state. Each cell starts at a random stagger
+    // 0-200ms after entering DISSOLVING; from staggerStart over 600ms it
+    // (a) cycles 3 random chars in the first 240ms and (b) ramps the
+    // plane material opacity from 1.0 to 0.0 across the remaining 360ms.
+    // Once all cells are at opacity 0 the cube transitions to WAITING.
+    cellDissolve: Array.from({ length: 5 }, () =>
+      Array.from({ length: 5 }, () => ({
+        staggerStartMs: 0,
+        lastCharMs: 0,
+        charIdx: 0,
+      }))
+    ),
     // Interference burst: every 30-60s a handful of slabs briefly shift by a
     // few pixels to sell "this signal is coming over a long, lossy channel."
     // The first burst is scheduled 6-15s after mount; subsequent bursts
@@ -463,17 +482,20 @@ function CubeRig({ glyphs, status }: SceneProps) {
     sweep: {
       lastHighlight: null as { r: number; c: number } | null,
     },
-    // GATHERING-phase signal-check flicker. Replaces the previous
-    // breathing-scale + slow-Y-drift ambient with a much rarer, more
-    // mechanical event: every 30-60s one random cell briefly dims its
-    // glyph plane and shakes 1px on x for ~120ms, like a vacuum tube
-    // reseating. The instrument waits at rest, but it isn't dead.
+    // GATHERING-phase signal-check glitch. Five glitch types, weighted-
+    // random per event. Cycles 25-50s. Tracks last cell so we don't fire
+    // the same one twice in a row.
     gatheringFlicker: {
       active: false,
       startMs: 0,
       cell: null as { r: number; c: number } | null,
-      // First flicker 5-30s after first entering GATHERING; subsequent
-      // intervals are recomputed on each completion.
+      lastCell: null as { r: number; c: number } | null,
+      kind: 0 as 0 | 1 | 2 | 3 | 4,
+      // Per-glitch payload (filled at event start).
+      offsetPx: 0,
+      symbolChar: "",
+      ghostChar: "",
+      // First glitch 5-30s after first entering GATHERING.
       nextStartMs:
         (typeof performance !== "undefined" ? performance.now() : 0) +
         5_000 +
@@ -523,7 +545,34 @@ function CubeRig({ glyphs, status }: SceneProps) {
   useEffect(() => {
     const now = performance.now();
     const cs = stateRef.current.cubeState;
-    if (status === "SOLVING" && cs !== "SOLVING" && cs !== "LOCKING") {
+    // eslint-disable-next-line no-console
+    console.log("[lg.anim]", {
+      ts: Date.now(),
+      event: "status-change",
+      status,
+      cs,
+    });
+    if (status === "WAITING" && cs !== "DISSOLVING" && cs !== "WAITING") {
+      // Timer-hit-zero entry: dissolve the current grid, then hold the
+      // empty cube for as long as the keeper takes to confirm a tick.
+      stateRef.current.cubeState = "DISSOLVING";
+      stateRef.current.enteredAtMs = now;
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          stateRef.current.cellDissolve[r][c] = {
+            staggerStartMs: Math.random() * 200,
+            lastCharMs: 0,
+            charIdx: 0,
+          };
+        }
+      }
+      // eslint-disable-next-line no-console
+      console.log("[lg.anim]", {
+        ts: Date.now(),
+        event: "dissolution-start",
+        fromGlyphs: stateRef.current.displayedGlyphs.map((r) => r.join("")),
+      });
+    } else if (status === "SOLVING" && cs !== "SOLVING" && cs !== "LOCKING") {
       stateRef.current.cubeState = "SOLVING";
       stateRef.current.enteredAtMs = now;
     } else if (status === "LOCKED" && cs !== "LOCKING" && cs !== "LOCKED") {
@@ -531,6 +580,23 @@ function CubeRig({ glyphs, status }: SceneProps) {
       stateRef.current.enteredAtMs = now;
       stateRef.current.finalGlyphs = glyphs.map((row) => [...row]);
       stateRef.current.lastFlashEndMs = 0;
+      // Restore plane material opacity to 1 across the grid — DISSOLVING
+      // would have left them at 0, and the scramble must paint on
+      // visible surfaces or the cube reads as empty stone.
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          const plane = frontPlaneRefs.current[r][c];
+          const mat = plane?.material as THREE.MeshBasicMaterial | undefined;
+          if (mat) mat.opacity = 1.0;
+        }
+      }
+      // eslint-disable-next-line no-console
+      console.log("[lg.anim]", {
+        ts: Date.now(),
+        event: "scramble-start",
+        toGlyphs: glyphs.map((r) => r.join("")),
+        previousCs: cs,
+      });
       // Initialise per-cell lock state. Each cell picks a settle time
       // uniformly across the settlement window, a 4-6 step tumble
       // sequence ending on its true glyph, and a scramble cadence in
@@ -595,27 +661,56 @@ function CubeRig({ glyphs, status }: SceneProps) {
     }
   }, [status, glyphs, glyphFront, glyphBack]);
 
-  // Standalone "redraw on glyphs prop change" effect. The status-transition
-  // effect above only repaints when status itself transitions — but in the
-  // live oracle, status sits at GATHERING while the on-chain hydrate fetches
-  // the locked square asynchronously. Without this, the very first render's
-  // initial " " glyphs stay on the canvas forever and the cube reads as
-  // empty stone. Skip during SOLVING / LOCKING so we don't clobber the live
-  // animation that's mid-flicker or mid-flip.
+  // Standalone "redraw on glyphs prop change" effect. Purpose: handle the
+  // INITIAL hydrate where status sits at GATHERING while the on-chain
+  // fetch resolves asynchronously, and we need to paint the freshly-
+  // arrived glyphs onto the otherwise-blank canvases.
+  //
+  // After that first paint, every subsequent glyph change (i.e. every
+  // epoch advance) is owned by the LOCKING animation chain — the scramble
+  // pulls the new glyphs out of `glyphs` and lands on them as its
+  // settlement target. Repainting from THIS effect when the prop change
+  // is the result of an epoch advance would race the LOCKING transition
+  // and snap the cube to the new letters before scramble can run. That
+  // was the source of the intermittent "no scramble visible" bug:
+  // sometimes setStatus(SOLVING) and setGlyphs(newGlyphs) batched into
+  // the same render and the source-order useEffect dance worked; other
+  // times pullEpoch's RPC resolved a beat ahead of the SSE-driven
+  // setStatus and this effect fired with cs still GATHERING, repainting
+  // the canvases with new letters before the LOCKING gate could close.
+  //
+  // The fix: gate this effect on displayedGlyphs being all-empty. After
+  // the first non-empty hydrate, the LOCKING chain owns transitions.
   useEffect(() => {
     const cs = stateRef.current.cubeState;
-    // Skip during any active animation phase — those phases own the
-    // canvas writes (SOLVING flicker, LOCKING scramble, LOCKED flash,
-    // READING sweep highlights). Repainting from this effect during
-    // them would cancel the animation visually.
     if (
       cs === "SOLVING" ||
       cs === "LOCKING" ||
       cs === "LOCKED" ||
-      cs === "READING"
+      cs === "READING" ||
+      cs === "DISSOLVING" ||
+      cs === "WAITING"
     )
       return;
     const displayed = stateRef.current.displayedGlyphs;
+    const isEmpty = displayed.every((row) =>
+      row.every((c) => c === " " || c === "" || c === "?")
+    );
+    if (!isEmpty) {
+      // eslint-disable-next-line no-console
+      console.log("[lg.anim]", {
+        ts: Date.now(),
+        event: "standalone-redraw-skipped",
+        reason: "displayed not empty — LOCKING owns transition",
+      });
+      return;
+    }
+    // eslint-disable-next-line no-console
+    console.log("[lg.anim]", {
+      ts: Date.now(),
+      event: "standalone-redraw-initial-hydrate",
+      glyphsHead: glyphs[0]?.join("") ?? "",
+    });
     let changed = false;
     for (let r = 0; r < 5 && !changed; r++) {
       for (let c = 0; c < 5 && !changed; c++) {
@@ -674,17 +769,60 @@ function CubeRig({ glyphs, status }: SceneProps) {
         if (rg) rg.rotation.x = stateRef.current.rowBaseRotation[r];
       }
 
-      // Signal-check flicker: every 30-60s, one random cell dims and
-      // shakes microscopically. Two-ramp opacity curve (60ms down to
-      // 0.6, 60ms back to 1.0) plus a 1-pixel-equivalent x offset for
-      // the same window.
+      // Signal-check glitch: every 25-50s one cell fires one of five
+      // glitch types. The previous cell is excluded from the next
+      // selection so consecutive glitches land on different cells.
+      // Type weights — dim 35 / offset 25 / symbol 15 / ghost 15 /
+      // color-shift 10 — were tuned to feel intermittent at rest
+      // without crossing into "constantly distracting."
       const fk = stateRef.current.gatheringFlicker;
       if (!fk.active && now >= fk.nextStartMs) {
+        // Pick cell, excluding the last one.
+        let r = Math.floor(Math.random() * 5);
+        let c = Math.floor(Math.random() * 5);
+        if (
+          fk.lastCell &&
+          fk.lastCell.r === r &&
+          fk.lastCell.c === c
+        ) {
+          // shift by 1 to land on a different cell
+          c = (c + 1) % 5;
+        }
+        // Weighted random kind selection.
+        const roll = Math.random();
+        let kind: 0 | 1 | 2 | 3 | 4;
+        if (roll < 0.35) kind = 0; // dim flicker
+        else if (roll < 0.6) kind = 1; // position offset
+        else if (roll < 0.75) kind = 2; // symbol replacement
+        else if (roll < 0.9) kind = 3; // ghost double
+        else kind = 4; // color shift
         fk.active = true;
         fk.startMs = now;
-        const r = Math.floor(Math.random() * 5);
-        const c = Math.floor(Math.random() * 5);
         fk.cell = { r, c };
+        fk.kind = kind;
+        fk.offsetPx = (Math.random() < 0.5 ? -1 : 1) * 2; // type 1 + 2 use this
+        fk.symbolChar = pickScrambleChar();
+        fk.ghostChar = pickScrambleChar();
+        if (kind === 2 || kind === 3 || kind === 4) {
+          // One-shot redraw; restore on completion.
+          const finalGlyph =
+            stateRef.current.displayedGlyphs[r]?.[c] ?? "?";
+          if (kind === 2) {
+            glyphFront[r][c].drawStyled(fk.symbolChar, {
+              tintOverride: cellAttrs[r][c].tint,
+            });
+          } else if (kind === 3) {
+            glyphFront[r][c].drawStyled(finalGlyph, {
+              tintOverride: cellAttrs[r][c].tint,
+              doubleImageWith: fk.ghostChar,
+            });
+          } else if (kind === 4) {
+            // Cool tint shift — toward yellow.
+            glyphFront[r][c].drawStyled(finalGlyph, {
+              tintOverride: "#e8d59b",
+            });
+          }
+        }
       }
       if (fk.active && fk.cell) {
         const elapsed = now - fk.startMs;
@@ -692,27 +830,105 @@ function CubeRig({ glyphs, status }: SceneProps) {
         const plane = frontPlaneRefs.current[r][c];
         const mat = plane?.material as THREE.MeshBasicMaterial | undefined;
         const j = cellAttrs[r][c];
-        if (elapsed >= 120) {
-          // Restore: opacity 1, position back to per-cell jitter.
+        // Per-kind durations
+        const durations = [120, 80, 80, 100, 150];
+        const kindDuration = durations[fk.kind];
+
+        if (elapsed >= kindDuration) {
+          // Restore everything. drawStyled forces redraw so subsequent
+          // draw() with the same letter still paints.
           if (mat) mat.opacity = 1.0;
           if (plane) plane.position.set(j.x, j.y, SLAB_D / 2 + 0.001);
+          if (fk.kind === 2 || fk.kind === 3 || fk.kind === 4) {
+            const finalGlyph =
+              stateRef.current.displayedGlyphs[r]?.[c] ?? "?";
+            glyphFront[r][c].drawStyled(finalGlyph, {
+              tintOverride: cellAttrs[r][c].tint,
+            });
+          }
+          fk.lastCell = { r, c };
           fk.active = false;
           fk.cell = null;
-          fk.nextStartMs = now + 30_000 + Math.random() * 30_000;
+          fk.nextStartMs = now + 25_000 + Math.random() * 25_000;
         } else if (mat && plane) {
-          let opacity: number;
-          if (elapsed < 60) {
-            opacity = 1.0 - 0.4 * (elapsed / 60);
-          } else {
-            opacity = 0.6 + 0.4 * ((elapsed - 60) / 60);
+          if (fk.kind === 0) {
+            // Dim flicker: 60ms down to 0.6, 60ms back.
+            const opacity =
+              elapsed < 60
+                ? 1.0 - 0.4 * (elapsed / 60)
+                : 0.6 + 0.4 * ((elapsed - 60) / 60);
+            mat.opacity = opacity;
+          } else if (fk.kind === 1) {
+            // Position offset: 2px on x for the duration, snap back at end.
+            const pxScale = SLAB_W * 0.96 * (1 / TEXTURE_SIZE);
+            plane.position.set(
+              j.x + fk.offsetPx * pxScale,
+              j.y,
+              SLAB_D / 2 + 0.001
+            );
           }
-          mat.opacity = opacity;
-          // 1 texture-pixel-equivalent x offset (matches the
-          // interference-burst scale unit but ⅓ the magnitude).
-          const pxScale = SLAB_W * 0.96 * (1 / TEXTURE_SIZE);
-          plane.position.set(j.x + pxScale, j.y, SLAB_D / 2 + 0.001);
+          // kinds 2/3/4 already painted at start; nothing per-frame here
         }
       }
+    } else if (cs === "DISSOLVING") {
+      sg.scale.setScalar(1.0);
+      sg.rotation.y = 0;
+      let allDone = true;
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          const d = stateRef.current.cellDissolve[r][c];
+          const cellElapsed = elapsedMs - d.staggerStartMs;
+          if (cellElapsed < 0) {
+            allDone = false;
+            continue;
+          }
+          if (cellElapsed >= 600) {
+            // Settled: opacity 0, leave alone.
+            const plane = frontPlaneRefs.current[r][c];
+            const mat = plane?.material as
+              | THREE.MeshBasicMaterial
+              | undefined;
+            if (mat && mat.opacity !== 0) mat.opacity = 0;
+            continue;
+          }
+          allDone = false;
+          const plane = frontPlaneRefs.current[r][c];
+          const mat = plane?.material as
+            | THREE.MeshBasicMaterial
+            | undefined;
+          if (cellElapsed < 240) {
+            // Char-cycle phase: pick a new random char every 80ms.
+            const wantIdx = Math.floor(cellElapsed / 80);
+            if (wantIdx > d.charIdx || d.lastCharMs === 0) {
+              d.charIdx = wantIdx;
+              d.lastCharMs = now;
+              glyphFront[r][c].drawStyled(pickScrambleChar(), {
+                tintOverride: cellAttrs[r][c].tint,
+              });
+            }
+            if (mat) mat.opacity = 1.0;
+          } else {
+            // Linear fade from 1.0 to 0.0 over the remaining 360ms.
+            const fadeT = (cellElapsed - 240) / 360;
+            if (mat) mat.opacity = Math.max(0, 1.0 - fadeT);
+          }
+        }
+      }
+      if (allDone) {
+        stateRef.current.cubeState = "WAITING";
+        stateRef.current.enteredAtMs = now;
+        // eslint-disable-next-line no-console
+        console.log("[lg.anim]", {
+          ts: Date.now(),
+          event: "dissolution-complete",
+        });
+      }
+    } else if (cs === "WAITING") {
+      // Empty grid hold. The status pill / WaitingMessage UI shows the
+      // "machine working" cycle. Cube does nothing visually until
+      // status flips to SOLVING/LOCKED.
+      sg.scale.setScalar(1.0);
+      sg.rotation.y = 0;
     } else if (cs === "SOLVING") {
       sg.scale.setScalar(1.0);
       sg.rotation.y = 0;

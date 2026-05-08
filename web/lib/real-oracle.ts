@@ -321,22 +321,24 @@ export function useRealOracle(): OracleState {
     pendingServerStatusRef.current =
       serverStatus === "LOCKED" ||
       serverStatus === "SOLVING" ||
-      serverStatus === "READING"
+      serverStatus === "READING" ||
+      serverStatus === "WAITING"
         ? "GATHERING"
         : serverStatus;
-    setStatus("SOLVING");
+    // Dissolution + waiting already happened (driven off nextTickSeconds
+    // hitting 0). Epoch advance here means the keeper has confirmed the
+    // tick — fire LOCKED immediately so the cube starts scramble from
+    // the empty/dissolved grid, then READING sweeps, then GATHERING.
+    setStatus("LOCKED");
     overrideTimeoutsRef.current.push(
-      window.setTimeout(() => setStatus("LOCKED"), 2000)
-    );
-    overrideTimeoutsRef.current.push(
-      window.setTimeout(() => setStatus("READING"), 7000)
+      window.setTimeout(() => setStatus("READING"), 5000)
     );
     overrideTimeoutsRef.current.push(
       window.setTimeout(() => {
         setStatus(pendingServerStatusRef.current ?? "GATHERING");
         pendingServerStatusRef.current = null;
         overrideTimeoutsRef.current = [];
-      }, 13000)
+      }, 11000)
     );
   }
 
@@ -545,6 +547,21 @@ export function useRealOracle(): OracleState {
     }, 1000);
     return () => window.clearInterval(id);
   }, []);
+
+  // When the countdown hits zero and we're still in GATHERING, transition
+  // to WAITING so the cube can dissolve and the dashboard can show the
+  // "machine working" status text. The override chain (kicked off by the
+  // SSE epoch advance) takes over from there.
+  useEffect(() => {
+    if (nextTickSeconds === 0 && status === "GATHERING") {
+      // eslint-disable-next-line no-console
+      console.log("[lg.anim]", {
+        ts: Date.now(),
+        event: "timer-zero-enter-waiting",
+      });
+      setStatus("WAITING");
+    }
+  }, [nextTickSeconds, status]);
 
   // ---------- block height heartbeat -------------------------------------
 
