@@ -96,6 +96,37 @@ export async function kvMget(keys: string[]): Promise<(string | null)[]> {
   return out;
 }
 
+// Atomic SET membership add. Used as a per-target / per-agent index
+// so reads never have to SCAN (SCAN is bounded and unreliable once
+// the keyspace gets large).
+export async function kvSadd(setKey: string, member: string): Promise<void> {
+  if (!kvConfigured()) {
+    throw new Error("KV_REST_API_URL / KV_REST_API_TOKEN unset");
+  }
+  const url = `${KV_URL}/sadd/${encodeURIComponent(setKey)}/${encodeURIComponent(member)}`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${KV_TOKEN}` },
+  });
+  if (!resp.ok) {
+    const txt = await resp.text();
+    throw new Error(`kv sadd failed: ${resp.status} ${txt}`);
+  }
+}
+
+// Read all members of a set. Returns [] if the set does not exist.
+export async function kvSmembers(setKey: string): Promise<string[]> {
+  if (!kvConfigured()) return [];
+  const url = `${KV_URL}/smembers/${encodeURIComponent(setKey)}`;
+  const resp = await fetch(url, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${KV_TOKEN}` },
+  });
+  if (!resp.ok) return [];
+  const body = (await resp.json()) as { result: string[] | null };
+  return body.result ?? [];
+}
+
 export function kvErrorResponse() {
   return {
     error: "storage not configured",

@@ -3,7 +3,8 @@ import {
   kvConfigured,
   kvErrorResponse,
   kvGet,
-  kvKeys,
+  kvMget,
+  kvSmembers,
 } from "@/lib/kv-helpers";
 
 export const dynamic = "force-dynamic";
@@ -31,30 +32,24 @@ export async function GET(
       { status: 400 }
     );
   }
-  const indexKeys = await kvKeys(
-    `annotation:target:${type}:${idxNum}:*`,
-    500
+  // Authoritative SET-based index: O(1) read, no SCAN.
+  const ids = await kvSmembers(
+    `annotation:target_set:${type}:${idxNum}`
   );
-  // Each key holds the annotation_id; resolve to full docs.
-  const ids = await Promise.all(
-    indexKeys.map((k) => kvGet(k))
+  const docKeys = ids.map((id) => `annotation:${id}`);
+  const docRaws = await kvMget(docKeys);
+  const annotations: any[] = [];
+  for (const raw of docRaws) {
+    if (!raw) continue;
+    try {
+      annotations.push(JSON.parse(raw));
+    } catch {
+      /* swallow */
+    }
+  }
+  const out = annotations.sort(
+    (a, b) => (a.submitted_at_ts ?? 0) - (b.submitted_at_ts ?? 0)
   );
-  const annotations = await Promise.all(
-    ids
-      .filter((v): v is string => typeof v === "string")
-      .map(async (id) => {
-        const raw = await kvGet(`annotation:${id}`);
-        if (!raw) return null;
-        try {
-          return JSON.parse(raw);
-        } catch {
-          return null;
-        }
-      })
-  );
-  const out = annotations
-    .filter((a): a is NonNullable<typeof a> => a !== null)
-    .sort((a, b) => (a.submitted_at_ts ?? 0) - (b.submitted_at_ts ?? 0));
   return NextResponse.json(
     {
       target_type: type,

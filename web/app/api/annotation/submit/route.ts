@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { keccak_256 } from "js-sha3";
-import { kvConfigured, kvErrorResponse, kvGet, kvSet } from "@/lib/kv-helpers";
+import { kvConfigured, kvErrorResponse, kvGet, kvSadd, kvSet } from "@/lib/kv-helpers";
 
 const VALID_TARGETS = new Set(["epoch", "layer1", "layer2"]);
 const VALID_CLAIM_TYPES = new Set([
@@ -149,11 +149,17 @@ export async function POST(req: NextRequest) {
   const docStr = JSON.stringify(doc);
   await kvSet(`annotation:${annotationId}`, docStr);
   await kvSet(`annotation:hash:${hash}`, docStr);
-  await kvSet(
-    `annotation:target:${targetType}:${targetIndex}:${ts}:${annotationId}`,
+  // Authoritative indices: SET membership so reads never have to SCAN.
+  // SCAN is bounded and unreliable in the live KV (~tens of thousands
+  // of keys from seeds, claims, scores, agent_logs).
+  await kvSadd(
+    `annotation:target_set:${targetType}:${targetIndex}`,
     annotationId
   );
-  await kvSet(`annotation:agent:${agentId}:${ts}:${annotationId}`, annotationId);
+  await kvSadd(`annotation:agent_set:${agentId}`, annotationId);
+  await kvSadd(`annotation:all_set`, annotationId);
+  // Legacy timestamped keys preserved for the recent-feed (lex-sorted
+  // by ts via SCAN). Recent feed handles small bounded scans fine.
   await kvSet(`annotation:recent:${ts}:${annotationId}`, annotationId);
 
   return NextResponse.json(doc, { status: 201 });

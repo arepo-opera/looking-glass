@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import {
   kvConfigured,
   kvErrorResponse,
-  kvGet,
-  kvKeys,
+  kvMget,
+  kvSmembers,
 } from "@/lib/kv-helpers";
 
 export const dynamic = "force-dynamic";
@@ -13,21 +13,20 @@ export async function GET() {
   if (!kvConfigured()) {
     return NextResponse.json(kvErrorResponse(), { status: 503 });
   }
-  // Walk the canonical annotation:{id} keys (one per annotation; the
-  // target/agent/recent keys are denormalised lookups).
-  const keys = await kvKeys("annotation:ann_*", 5000);
-  const docs = await Promise.all(
-    keys.slice(0, 2000).map(async (k) => {
-      const raw = await kvGet(k);
-      if (!raw) return null;
-      try {
-        return JSON.parse(raw);
-      } catch {
-        return null;
-      }
-    })
-  );
-  const annotations = docs.filter((d): d is NonNullable<typeof d> => d !== null);
+  // Authoritative: read from the SET that submit writes to. SCAN-based
+  // approaches were unreliable past ~5000 KV keys.
+  const ids = await kvSmembers("annotation:all_set");
+  const docKeys = ids.map((id) => `annotation:${id}`);
+  const raws = await kvMget(docKeys);
+  const annotations: any[] = [];
+  for (const raw of raws) {
+    if (!raw) continue;
+    try {
+      annotations.push(JSON.parse(raw));
+    } catch {
+      /* swallow */
+    }
+  }
 
   const claimTypeCounts: Record<string, number> = {};
   const targetCounts: Record<string, number> = {};

@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import {
   kvConfigured,
   kvErrorResponse,
-  kvGet,
-  kvKeys,
+  kvMget,
+  kvSmembers,
 } from "@/lib/kv-helpers";
 
 export const dynamic = "force-dynamic";
@@ -13,8 +13,8 @@ export async function GET() {
   if (!kvConfigured()) {
     return NextResponse.json(kvErrorResponse(), { status: 503 });
   }
-  const keys = await kvKeys("annotation:ann_*", 5000);
-  if (keys.length === 0) {
+  const ids = await kvSmembers("annotation:all_set");
+  if (ids.length === 0) {
     return NextResponse.json(
       {
         total_annotations: 0,
@@ -23,18 +23,16 @@ export async function GET() {
       { headers: { "Cache-Control": "public, max-age=60, s-maxage=120" } }
     );
   }
-  const docs = await Promise.all(
-    keys.slice(0, 2000).map(async (k) => {
-      const raw = await kvGet(k);
-      if (!raw) return null;
-      try {
-        return JSON.parse(raw);
-      } catch {
-        return null;
-      }
-    })
-  );
-  const annotations = docs.filter((d): d is NonNullable<typeof d> => d !== null);
+  const raws = await kvMget(ids.map((id) => `annotation:${id}`));
+  const annotations: any[] = [];
+  for (const raw of raws) {
+    if (!raw) continue;
+    try {
+      annotations.push(JSON.parse(raw));
+    } catch {
+      /* swallow */
+    }
+  }
 
   const claimTypeCounts: Record<string, number> = {};
   const targetCounts: Record<string, number> = {};

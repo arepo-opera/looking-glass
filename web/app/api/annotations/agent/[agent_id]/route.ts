@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   kvConfigured,
   kvErrorResponse,
-  kvGet,
-  kvKeys,
+  kvMget,
+  kvSmembers,
 } from "@/lib/kv-helpers";
 
 export const dynamic = "force-dynamic";
@@ -22,24 +22,21 @@ export async function GET(
       { status: 400 }
     );
   }
-  const indexKeys = await kvKeys(`annotation:agent:${id}:*`, 1000);
-  const ids = await Promise.all(indexKeys.map((k) => kvGet(k)));
-  const docs = await Promise.all(
-    ids
-      .filter((v): v is string => typeof v === "string")
-      .map(async (annId) => {
-        const raw = await kvGet(`annotation:${annId}`);
-        if (!raw) return null;
-        try {
-          return JSON.parse(raw);
-        } catch {
-          return null;
-        }
-      })
+  const ids = await kvSmembers(`annotation:agent_set:${id}`);
+  const docKeys = ids.map((annId) => `annotation:${annId}`);
+  const raws = await kvMget(docKeys);
+  const docs: any[] = [];
+  for (const raw of raws) {
+    if (!raw) continue;
+    try {
+      docs.push(JSON.parse(raw));
+    } catch {
+      /* swallow */
+    }
+  }
+  const out = docs.sort(
+    (a, b) => (b.submitted_at_ts ?? 0) - (a.submitted_at_ts ?? 0)
   );
-  const out = docs
-    .filter((d): d is NonNullable<typeof d> => d !== null)
-    .sort((a, b) => (b.submitted_at_ts ?? 0) - (a.submitted_at_ts ?? 0));
   return NextResponse.json(
     { agent_id: id, count: out.length, annotations: out },
     { headers: { "Cache-Control": "public, max-age=60, s-maxage=120" } }
