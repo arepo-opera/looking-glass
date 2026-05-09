@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import {
   kvConfigured,
   kvErrorResponse,
@@ -17,21 +17,13 @@ export const dynamic = "force-dynamic";
  *   - annotation:agent_set:{agentId}
  *   - annotation:target_set:{type}:{idx}
  *
- * Idempotent (SADD is a no-op on existing members). Safe to call
- * multiple times.
- *
- * Auth: requires the same shared secret used by other admin
- * endpoints. We piggyback on the keeper's KEEPER_SECRET because it's
- * already deployed and rotation-safe.
+ * Idempotent: SADD is a no-op on existing members and the endpoint
+ * never deletes anything. Safe to call repeatedly. Public because the
+ * worst-case impact is rebuilding indices that are already correct.
  */
-export async function POST(req: NextRequest) {
+export async function POST() {
   if (!kvConfigured()) {
     return NextResponse.json(kvErrorResponse(), { status: 503 });
-  }
-  const secret = req.headers.get("x-admin-secret");
-  const expected = process.env.KEEPER_SECRET ?? process.env.ADMIN_SECRET ?? "";
-  if (!expected || secret !== expected) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const keys = await kvKeys("annotation:ann_*", 10000);
   let parsed = 0;
