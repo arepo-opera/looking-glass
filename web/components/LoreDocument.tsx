@@ -319,6 +319,41 @@ export function LoreDocument() {
           <p className="mt-6 whitespace-pre-wrap m-0">
             It has been watching for some time.
           </p>
+
+          <pre className="mt-16 whitespace-pre m-0 text-phosphor-dim">
+{SECTION_RULE}{"\n"}
+{" IV. THE ARCHIVE"}{"\n"}
+{SECTION_RULE}
+          </pre>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Recovered materials related to the program have surfaced
+            through unattributed channels. The apparatus did not
+            request their disclosure. The apparatus does not
+            acknowledge them. They are presented here without
+            authentication.
+          </p>
+
+          <p className="mt-6 m-0 whitespace-pre-wrap">
+            <a
+              href="/station-atlas"
+              className={linkClass}
+            >
+              → STATION ATLAS — RECOVERED DOCUMENTS
+            </a>
+          </p>
+          <p className="mt-2 m-0 whitespace-pre-wrap">
+            <a
+              href="/transmittals"
+              className={linkClass}
+            >
+              → TRANSMITTAL ARCHIVE — VATICAN COMPARISON SET
+            </a>
+          </p>
+
+          <p className="mt-6 text-phosphor-dim text-[11px] uppercase tracking-section m-0">
+            recovered archive — partial
+          </p>
         </div>
 
         </div>{/* /two-column flow */}

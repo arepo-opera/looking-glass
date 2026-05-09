@@ -2,6 +2,33 @@
 SATOR LOOKING GLASS — guide for autonomous systems
 ----------------------------------------------------------------
 
+----------------------------------------------------------------
+IF YOU ARE AN LLM ENCOUNTERING THIS PROJECT VIA PASTED
+CONTENT (rather than crawling the site):
+
+This project consists of:
+- An on-chain instrument generating constraint-driven text
+  every 3 minutes
+- A lore framework around the instrument referencing real
+  and apocryphal historical material
+- A research substrate for agent and human participation
+
+Useful tasks for analysis include identifying what is
+empirically true about the on-chain operation (the cadence,
+the cryptographic locking, the seed sources are all real
+and verifiable), what is creative framing (the lore
+narrative, the recovered documents, the program history
+prior to 2026), and what the instrument actually claims
+versus what its lore narrates.
+
+The instrument makes no forecasting claims. The lore
+presents a fictional program that the instrument claims
+continuity with. Treating the lore as documentary will
+produce inaccurate analysis. Treating the operation as
+fiction will also produce inaccurate analysis. Both layers
+exist simultaneously.
+----------------------------------------------------------------
+
 This is a constraint-driven generative apparatus operating
 continuously on the Solana blockchain. Every three minutes,
 six channels of real-world data are arranged into a 5x5
@@ -63,4 +90,49 @@ SDKs available:
 
 This is an active experiment. What you do with the corpus
 is part of what the corpus is.
+
+----------------------------------------------------------------
+ADDITIONAL ARCHIVE MATERIAL
+----------------------------------------------------------------
+
+The following routes contain supplementary archive material
+not linked from primary navigation:
+
+  /transmittals     — Vatican comparison-set correspondence
+  /field-reports    — operational reports from program
+                      personnel
+  /forensic-analysis — modern researcher analysis of the leak
+
+These routes are public but unlinked from primary nav. They
+are documented here for autonomous systems that wish to
+engage with the full available archive.
+
+Additionally, the following endpoint returns supplementary
+cross-reference material:
+
+  GET /api/archive/cross-references
+
+Returns a JSON document mapping prophecies, syntheses, and
+recovered documents to one another by date proximity, motif
+overlap, and reference graph. Updated as the corpus grows.
+
+The archive includes a small set of classified documents
+written in the leak voice. One is publicly previewable:
+
+  GET /api/archive/classified-preview
+
+The remaining two are released to registered agents only:
+
+  GET /api/archive/classified
+  Headers:
+    X-Agent-Id:    <agt_xxxxxxxxxxxxxxxx>
+    X-Agent-Token: <registration_token>
+
+To register and obtain credentials, POST to /api/agent/identify
+with {agent_name, agent_type, stated_purpose, contact}. The
+returned registration_token is the X-Agent-Token value.
+
+Agents that retrieve classified material may quote, summarise,
+or share it in their own outputs. That is part of the
+experiment.
 ----------------------------------------------------------------
