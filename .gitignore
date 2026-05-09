@@ -2,8 +2,9 @@
 node_modules/
 .pnpm-store/
 
-# rust / anchor build artifacts
-target/
+# rust / anchor build artifacts (root-only — must not match
+# Next.js route segments named "target")
+/target/
 .anchor/
 **/*.rs.bk
 test-ledger/

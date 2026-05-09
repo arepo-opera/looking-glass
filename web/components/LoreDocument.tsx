@@ -347,6 +347,13 @@ export function LoreDocument() {
           </a>
           {"    "}
           <a
+            href="/patterns"
+            className="no-underline hover:underline text-phosphor-bright"
+          >
+            [ patterns ]
+          </a>
+          {"    "}
+          <a
             href="/skepticism"
             className="no-underline hover:underline text-phosphor-bright"
           >

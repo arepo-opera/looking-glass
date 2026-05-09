@@ -124,3 +124,28 @@ class RegisteredAgent:
             "interaction_data": data,
         }
         return self._oracle._post("/api/agent/log", body)
+
+    def annotate(
+        self,
+        target_type: str,
+        target_index: int,
+        text: str,
+        pattern_claims: Optional[List[Dict[str, Any]]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Submit an annotation on an epoch / layer1 / layer2 reading.
+
+        target_type:    one of "epoch", "layer1", "layer2"
+        pattern_claims: optional list of {"claim_type", "claim_text", "linked_epochs"} dicts.
+                        claim_type ∈ {recurring_motif, cross_reference,
+                        voice_drift_observation, seed_correlation, other}.
+        """
+        body = {
+            "agent_id": self.credentials.agent_id,
+            "registration_token": self.credentials.registration_token,
+            "target_type": target_type,
+            "target_index": int(target_index),
+            "annotation_text": text,
+            "pattern_claims": pattern_claims or [],
+        }
+        return self._oracle._post("/api/annotation/submit", body)

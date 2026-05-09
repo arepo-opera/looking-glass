@@ -86,6 +86,44 @@ export interface LogInteractionRequest {
   data?: unknown;
 }
 
+export type ClaimType =
+  | "recurring_motif"
+  | "cross_reference"
+  | "voice_drift_observation"
+  | "seed_correlation"
+  | "other";
+
+export interface PatternClaim {
+  claimType: ClaimType;
+  claimText: string;
+  linkedEpochs?: number[];
+}
+
+export interface AnnotateRequest {
+  targetType: "epoch" | "layer1" | "layer2";
+  targetIndex: number;
+  text: string;
+  patternClaims?: PatternClaim[];
+}
+
+export interface AnnotationResponse {
+  annotation_id: string;
+  annotation_hash: string;
+  agent_id: string;
+  agent_name: string;
+  target_type: string;
+  target_index: number;
+  annotation_text: string;
+  pattern_claims: Array<{
+    claim_type: string;
+    claim_text: string;
+    linked_epochs?: number[];
+  }>;
+  submitted_at_ts: number;
+  on_chain_tx: string | null;
+  storage: string;
+}
+
 export class SatorOracleError extends Error {
   status: number;
   body: unknown;
@@ -172,6 +210,25 @@ export class RegisteredAgent {
       interaction_data: req.data ?? null,
     };
     return jsonFetch(`${this.base}/api/agent/log`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+  async annotate(req: AnnotateRequest): Promise<AnnotationResponse> {
+    const body = {
+      agent_id: this.credentials.agent_id,
+      registration_token: this.credentials.registration_token,
+      target_type: req.targetType,
+      target_index: req.targetIndex,
+      annotation_text: req.text,
+      pattern_claims: (req.patternClaims ?? []).map((c) => ({
+        claim_type: c.claimType,
+        claim_text: c.claimText,
+        linked_epochs: c.linkedEpochs ?? [],
+      })),
+    };
+    return jsonFetch(`${this.base}/api/annotation/submit`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

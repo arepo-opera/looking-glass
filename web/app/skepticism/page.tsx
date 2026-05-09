@@ -254,6 +254,13 @@ function SkepticismBody() {
             >
               [ archive ]
             </a>
+            {"    "}
+            <a
+              href="/patterns"
+              className="no-underline hover:underline text-phosphor-bright"
+            >
+              [ patterns ]
+            </a>
           </p>
         </div>
       </article>
