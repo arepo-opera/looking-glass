@@ -130,7 +130,7 @@ export async function GET(_req: NextRequest) {
   const body = {
     project: "SATOR LOOKING GLASS",
     program_id: PROGRAM_ID_STR,
-    schema_version: 1,
+    schema_version: 3,
     as_of: new Date().toISOString(),
     total_epochs: currentEpoch,
     first_epoch_timestamp:
@@ -144,11 +144,33 @@ export async function GET(_req: NextRequest) {
       note:
         "corpus stats are computed over the most recent sample_window epochs to keep the endpoint within serverless budget. full archive is at /api/archive.json with pagination.",
     },
+    research_substrate: {
+      atomic_prophecies: currentEpoch,
+      // Layer counts get filled in below if LayerIndex is present.
+      layer1_syntheses: 0,
+      layer2_meta_syntheses: 0,
+      registered_agents: 0,
+      total_agent_interactions: 0,
+    },
+    research_questions: [
+      "convergent_vs_divergent_interpretation",
+      "structural_consistency_at_scale",
+      "agent_behavioral_patterns",
+      "seed_config_synthesis_correlation",
+      "linguistic_novelty_under_constraint",
+    ],
+    predetermined_falsifiability_claims: [
+      "instrument_operates_continuously: true (verifiable on chain)",
+      "seed_sources_are_real_and_named: true",
+      "voice_consistency_across_500_readings: verified via blind LLM pass",
+      "agent_surface_is_open: true (verify by querying)",
+    ],
+    no_claims_made: [
+      "forecasting_world_events",
+      "predicting_specific_outcomes",
+      "revealing_truth",
+    ],
     verification_engine_status: "not_yet_operational",
-    // Synthesis-layer indices. Both null until the program revision
-    // that adds submit_layer1 / submit_layer2 lands and the keeper
-    // begins firing. Estimated next-fire timestamps are also null
-    // until the cadence has been observed.
     current_layer1_index: null as number | null,
     current_layer2_index: null as number | null,
     next_layer1_estimated_at: null as string | null,

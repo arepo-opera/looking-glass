@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
 import idl from "../../../../shared/looking_glass.json";
+import { kvGet } from "@/lib/kv-helpers";
 
 // Server-side archive: walks the on-chain EpochSquare PDAs from the current
 // epoch downward and returns them as a stable JSON schema for AI agents and
@@ -108,9 +109,11 @@ interface ArchiveEntry {
   backward_digest: string;
   pda: string;
   tx_signature: string | null;
-  // Seeds at locking are not retained on-chain — only the keccak digests
-  // that derive from them. Reserved here for a future schema bump.
-  seeds: null;
+  // Phase 20B-final: seeds populated from KV (`seeds:epoch:{N}`)
+  // for any epoch that locked after the keeper began recording them.
+  // Returns null for older epochs whose seeds were never captured.
+  seeds: unknown | null;
+  spine_owner: string;
 }
 
 export const revalidate = 60;
@@ -186,7 +189,16 @@ export async function GET(req: NextRequest) {
           backward_digest: bytesToHex(sq.backwardDigest ?? []),
           pda: pda.toBase58(),
           tx_signature: txSig,
-          seeds: null,
+          seeds: null as unknown,
+          spine_owner: ((ep % 5) + 5) % 5 === 0
+            ? "MARKETS"
+            : ((ep % 5) + 5) % 5 === 1
+              ? "CHAIN"
+              : ((ep % 5) + 5) % 5 === 2
+                ? "WORLD"
+                : ((ep % 5) + 5) % 5 === 3
+                  ? "HEAVENS"
+                  : "ECHO+DRIFT",
         };
       } catch {
         return null;
@@ -195,6 +207,27 @@ export async function GET(req: NextRequest) {
   );
 
   const prophecies = entries.filter((e): e is ArchiveEntry => e !== null);
+
+  // Phase 20B-final: enrich each entry with the captured seed record
+  // from KV, if one exists. Older epochs whose seeds were never
+  // captured stay at seeds: null. Single SCAN-style fetch per entry;
+  // no rate-limit concerns at the request volumes we expect.
+  await Promise.all(
+    prophecies.map(async (p) => {
+      try {
+        const raw = await kvGet(`seeds:epoch:${p.epoch}`);
+        if (raw) {
+          try {
+            p.seeds = JSON.parse(raw);
+          } catch {
+            /* leave null */
+          }
+        }
+      } catch {
+        /* leave null */
+      }
+    })
+  );
 
   // ---- Layer 1 / Layer 2 syntheses --------------------------------------
   //

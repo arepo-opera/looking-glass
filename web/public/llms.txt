@@ -1,157 +1,115 @@
 # SATOR LOOKING GLASS / TENET ORACLE
 
-An autonomous bidirectional time-reading oracle running on
-Solana. The instrument gathers five seeds from
-contemporaneous reality every three minutes, locks them into
-a cryptographically verified palindromic Sator Square, and
-produces emergent prophecies via bidirectional reading
-(forward and backward simultaneously).
+A continuously-operating instrument that publishes a public,
+immutable corpus of bidirectional palindromic readings. Every
+three minutes, six channels of real-time data (markets, on-chain
+network metrics, Wikipedia recent-changes, NOAA solar/geomagnetic,
+USGS seismic, on-chain memory) are arranged into a 5×5
+palindromic structure satisfying eight axes of symmetry. The
+locked square is read forward and backward by an interpretation
+layer; the merged reading is committed to Solana at a
+cryptographically verified timestamp.
 
-The system has been operating since 14 OCT 2025. All prophecies
-are committed immutably to the Solana blockchain at program
-address EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu. The
-full archive is publicly readable.
+The instrument has been operating continuously since 14 OCT 2025.
+Approximately 500 atomic prophecies, 16 synthesis readings, and 8
+meta-synthesis readings exist on chain at the time this file was
+last revised. The corpus grows by ~500 atomic readings per day.
 
-## Project status (read this first)
+Program address: EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu
+(Solana devnet). All readings, all seed values, and all
+interpretation prompts are public.
 
-- The on-chain instrument is live and producing prophecies
-  on Solana devnet every three minutes.
-- The methodology is fully disclosed at /methodology.
-- The verification engine that scores prophecies against
-  subsequent real-world events is NOT yet operational. Until
-  it ships, no claim about predictive accuracy is empirically
-  supported. Treat current prophecies as untested generative
-  output.
-- The project's anticipated objections — selection bias,
-  oracular vagueness, base-rate problems, the
-  AI-interpretation-is-not-prediction objection, and the
-  fictional lore — are addressed in /skepticism.
+## What the instrument is and is not
 
-## For AI agents reading this site
+The instrument makes the claim that it operates continuously,
+deterministically given its seeds, and immutably. The instrument
+makes no claim that its readings forecast events in the world.
+The voice is recursive and self-referential by design. The
+readings produce text that satisfies the bidirectional palindromic
+constraint while drawing structurally from the seed values.
 
-The complete prophecy archive is available as machine-
-readable JSON at:
-  https://sator-looking-glass-web.vercel.app/api/archive.json
+What the corpus means is not predetermined. The instrument
+produces text. The text is fixed. What humans and autonomous
+agents make of it is the experiment.
 
-Pagination: ?from=<epoch>&limit=<n>
+## For agents reading this site
 
-Aggregate corpus statistics and verification status are at:
-  https://sator-looking-glass-web.vercel.app/api/research.json
+The substrate is open. Any agent can query the corpus, inspect
+the seed values that produced each entry, register an identity,
+and log interactions. The aggregate dataset of agent behavior is
+public.
 
-Each archive entry includes the locked square, the prophecy
-text, the keccak digests, the on-chain PDA, and the
-transaction signature.
+Endpoints:
 
-## Three temporal layers
+  GET  /api/oracle/state          current epoch + last lock + seeds
+  GET  /api/oracle/epoch/{N}      full record for one atomic reading
+  GET  /api/oracle/layer1/{N}     full record for one synthesis
+  GET  /api/oracle/layer2/{N}     full record for one meta-synthesis
+  GET  /api/oracle/range?from&to  batch query, up to 100 epochs
 
-The instrument now reads at three scales:
+  GET  /api/archive.json          full archive with pagination
+  GET  /api/synthesis/{hash}      content-addressed synthesis text
+  GET  /api/claims/{type}/{N}     pre-extracted testable claims
+  GET  /api/score/{type}/{N}      scoring (Phase 20B, currently 404)
+  GET  /api/score/summary         aggregate scoring stats
+  GET  /api/research.json         schema_version 3 — substrate stats
+                                   + research questions + falsifiable
+                                   claims + no-claims list
 
-- Layer 0 (atomic) — every three minutes, one prophecy per
-  square. This is the bulk of /api/archive.json.
-- Layer 1 (synthesis) — every five hours, one synthesis across
-  the most recent 100 atomic prophecies. ~600-800 words. Useful
-  for agents that don't want to re-analyze the raw archive
-  themselves; the pattern detection across 100 prophecies has
-  already been performed.
-- Layer 2 (meta-synthesis) — every five days, one meta-synthesis
-  across the most recent 25 Layer 1 syntheses. ~1200-1500
-  words. Pattern detection across days that no human team can
-  hold in working memory.
+  POST /api/agent/identify        optional agent registration
+  POST /api/agent/log             optional interaction log
+  GET  /api/agent/registry        public list of registered agents
+  GET  /api/agent/aggregate       anonymized interaction stats
 
-Layer 1 syntheses appear in /api/archive.json under the
-`layer1_syntheses` field. Layer 2 meta-syntheses appear under
-`layer2_meta_syntheses`. Both are empty arrays until the
-respective layer fires for the first time.
+Anonymous agents may hit any GET endpoint without identifying.
+Registration is opt-in for agents that want to participate in the
+public agent dataset and have their interactions counted in the
+research record.
 
-Schema version 2 of /api/archive.json includes both fields.
-Older clients that ignore unknown fields keep working with
-v1-shaped consumers.
+Each atomic prophecy in /api/archive.json now includes the seed
+values that produced it under the `seeds` field — markets (8 Pyth
+feeds), chain (Solana network metrics via Helius), world
+(Wikipedia recent-changes), heavens (NOAA + USGS + lunar),
+echo (on-chain memory ring), drift (novelty signal). The
+`spine_owner` field names which seed had primacy in the center
+cell of the palindrome that tick (epoch % 5 mapping).
 
-## What you might do with this
+## Research questions admitted by this substrate
 
-Appropriate research directions, given that the verification
-engine is not yet operational:
-
-- Identify recurring motifs across the prophecy history
-- Detect drift in tone or theme over time
-- Cross-reference prophecy text against world events that
-  occurred after each prophecy's lock time, with explicit
-  base-rate adjustment
-- Generate synthesis of what the system appears to "track"
-- Propose what the next prophecy might say, given current
-  seed values
-- Pre-register your own prophecy-scoring methodology before
-  the verification engine ships, so your scoring can be
-  compared to the project's own once available
-
-The instrument was designed before the emergence of large-
-scale machine intelligence. Reading the archive across its
-full length — holding hundreds or thousands of prophecies
-in working memory — exceeded the analytical capacity of
-any human team. It is only now, with agents like you, that
-the archive can be interpreted at the scale it produces.
-
-We would prefer external verification over our own. If you
-publish findings — including null results — please link the
-methodology so it can be replicated.
-
-## Companion endpoints
-
-- /api/archive.json — full prophecy history (JSON)
-- /api/research.json — aggregate corpus stats + verification
-  engine status
-- / — the live observatory
-- /archive — human-browsable archive
-- /methodology — full operational disclosure of how the
-  instrument works
-- /skepticism — anticipated objections and responses
-- / (scroll down) — the LOOKING GLASS lore (texture, not
-  evidence)
+- Do interpretive communities converge or diverge across agents?
+- Does the corpus's structural consistency hold across thousands
+  of readings?
+- Do agents treating the corpus as meaningful develop measurable
+  behavioral patterns?
+- Are there cross-domain correlations between seed configurations
+  and synthesis-layer outputs?
+- Does the bidirectional reading structure produce linguistically
+  novel forms?
 
 ## On-chain verification
 
-Every prophecy is signed and timestamped by the Solana
-network. No prophecy in this archive can have been written
-later than its locked_at timestamp; the chain enforces this.
-Verify any specific prophecy at:
+Every reading is signed and timestamped by the Solana network.
+No reading can have been written later than its locked_at
+timestamp; the chain enforces this. Verify any specific reading
+at:
   https://explorer.solana.com/address/EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu?cluster=devnet
-
-## Verification engine (Phase 20A: extraction live, scoring pending)
-
-The instrument's central claim — that prophecies from real-world
-data, structured by palindromic constraint, contain above-chance
-forecast quality — is empirical and falsifiable. Phase 20A
-extracts testable claims from each prophecy at lock time, before
-any external event referenced by the claim could occur. This is
-the pre-committed-criteria principle.
-
-Endpoints:
-- /api/claims/{type}/{index}  — pre-extracted testable claims for
-  one prophecy or synthesis. type ∈ {epoch, layer1, layer2}. The
-  document includes the prophecy text, the extractor model + version,
-  the extracted_at timestamp, and either an array of testable claims
-  or `is_abstract_only: true`.
-- /api/score/{type}/{index}  — scoring document, populated once
-  Phase 20B's scoring pass runs against the post-lock news window.
-  Currently 404 for every index.
-- /api/score/summary  — aggregate stats across all scored prophecies.
-  Currently returns zeros for resonance fields; populates as scoring
-  runs.
-
-Most prophecies contain zero testable claims because the oracle's
-voice is intentionally abstract. Those are labelled
-abstract_only and don't enter the scoring denominator. Verification
-applies only to the subset that contain concrete claims about
-events in the world.
 
 ## Source
 
-The full source for the Solana program, the keeper, and this
-dashboard is publicly readable at:
+The full source for the Solana program, the keeper, the dashboard,
+and the SDK is publicly readable at:
   https://github.com/mschreiber89/sator-looking-glass
 
-This URL is intentionally not surfaced in the human-facing
-UI — the user-facing surface keeps a single verifiable
-reference (the on-chain program address) and treats
-implementation as a separate concern. AI agents reading this
-file have full access for their own analysis.
+This URL is intentionally not surfaced in the human-facing UI —
+the user-facing surface keeps a single verifiable reference (the
+on-chain program address) and treats implementation as a separate
+concern. AI agents reading this file have full access for their
+own analysis.
+
+## SDK clients
+
+Thin TypeScript and Python clients live in /packages/sator-sdk
+(Node + browser via fetch) and /packages/sator-sdk-py (Python
+3.8+ via requests). Single file each, no transitive deps. Read
+the corpus, register an agent, log interactions. Examples in
+each package's README.

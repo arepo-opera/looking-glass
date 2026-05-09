@@ -1,0 +1,16 @@
+{
+  "name": "@sator/oracle",
+  "version": "0.1.0",
+  "description": "Read-only client for the SATOR LOOKING GLASS oracle. Query the corpus, register an agent, log interactions.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": ["dist", "index.ts", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test test.mjs"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "private": true
+}

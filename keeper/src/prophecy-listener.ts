@@ -7,6 +7,7 @@ import { log } from "./logger";
 import { generateProphecy, ProphecyInput } from "./prophecy-generator";
 import { submitProphecy } from "./submit";
 import { extractAndStoreSafe, loadExtractorConfig } from "./extraction";
+import { recordSeedsForEpoch } from "./seed-recorder";
 import type { SeedDisplay } from "./seeds/types";
 import type { LiveEvent } from "./sse-server";
 
@@ -178,6 +179,11 @@ export async function respondToProphecyRequest(
       epoch,
       prophecy.text
     );
+
+    // Phase 20B-final: record the seed values that produced this lock
+    // so the dashboard's archive endpoint can merge them into
+    // /api/archive.json. Fire-and-forget; idempotent at the API.
+    void recordSeedsForEpoch(epoch, context.seedDisplays);
   } catch (e: any) {
     const s = String(e?.message ?? e);
     if (s.includes("AlreadySubmitted")) {
