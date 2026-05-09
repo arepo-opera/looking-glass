@@ -89,7 +89,7 @@ body {
   background-image: url("/textures/paper-noise.svg");
   background-size: 240px 240px;
   background-repeat: repeat;
-  opacity: 0.22;
+  opacity: 0.42;
   mix-blend-mode: multiply;
   pointer-events: none;
   z-index: 0;
@@ -103,7 +103,7 @@ body {
   background-image: url("/textures/scan-banding.svg");
   background-size: 100% 100%;
   background-repeat: no-repeat;
-  opacity: 0.55;
+  opacity: 0.85;
   mix-blend-mode: multiply;
   pointer-events: none;
   z-index: 1;
@@ -296,17 +296,26 @@ body {
 
 /* ===== DESK SURFACE (for /station-atlas) =====
    A darker textured background simulating wood/steel desk under
-   the documents. Only used on the desk-layout page. */
+   the documents. The base is much darker than the page charcoal so
+   documents float clearly above it. Wood-grain feel via two
+   stacked noise repeats at different scales. */
 .desk-surface {
-  background-color: #161210;
+  background-color: #0a0705;
   background-image:
     radial-gradient(
-      ellipse 80% 60% at 50% 40%,
-      rgba(50, 35, 22, 0.55) 0%,
+      ellipse 90% 70% at 50% 30%,
+      rgba(72, 50, 30, 0.45) 0%,
+      transparent 75%
+    ),
+    radial-gradient(
+      ellipse 55% 35% at 70% 80%,
+      rgba(40, 28, 18, 0.55) 0%,
       transparent 70%
     ),
+    url("/textures/paper-noise.svg"),
     url("/textures/paper-noise.svg");
-  background-size: auto, 240px 240px;
+  background-size: auto, auto, 480px 480px, 120px 120px;
+  background-blend-mode: normal, normal, soft-light, overlay;
 }
 
 /* ===== DOCUMENT FRAME (the wrapper that holds rotation + shadow) ===== */
