@@ -47,3 +47,272 @@ body {
   pointer-events: none;
   mix-blend-mode: multiply;
 }
+
+/* ============================================================
+   PHASE 22b — RECOVERED-DOCUMENT VISUAL TREATMENT
+   ============================================================
+   Documents on /station-atlas, /transmittals, /field-reports,
+   /forensic-analysis are visually treated to look like
+   physical scans. Text remains real HTML for accessibility.
+   The CRT overlay still composites on top of all of this. */
+
+/* Paper bases — cream/sepia tones, varied per document. Children
+   sit above the noise overlays via z-index. `isolation: isolate`
+   prevents the doc's overlay from bleeding into the page. */
+.paper {
+  position: relative;
+  isolation: isolate;
+  background: #f4ecd8;
+  color: #1a1612;
+  /* Drop shadow + slight inner darkening at the edges so the doc
+     reads as a physical object on a darker surface. */
+  box-shadow:
+    0 18px 40px -8px rgba(0, 0, 0, 0.55),
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    inset 0 0 60px rgba(110, 80, 40, 0.10);
+}
+/* Era-tinted paper variants. Older = more yellowing + warmer tone. */
+.paper-1960s { background: #e8d49c; color: #2a1c10; }
+.paper-1970s { background: #ecd9a8; color: #281a10; }
+.paper-1980s { background: #efddb0; color: #251812; }
+.paper-1990s { background: #f1e2bc; color: #221814; }
+.paper-2000s { background: #f4e8c8; color: #1c1410; }
+.paper-2010s { background: #f6ecd6; color: #181410; }
+.paper-worn { background: #d8c4a0; color: #2c1d11; }
+
+/* Paper grain noise — single shared SVG, mix-blend-mode: multiply
+   so it works against any base color without explicit per-doc tuning. */
+.paper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/textures/paper-noise.svg");
+  background-size: 240px 240px;
+  background-repeat: repeat;
+  opacity: 0.22;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scanner artifacts — horizontal banding + edge vignette. */
+.paper::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/textures/scan-banding.svg");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  opacity: 0.55;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.paper > * { position: relative; z-index: 2; }
+
+/* Optional vertical scanner-dust streak — placed by inline CSS var. */
+.paper-streak {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  left: var(--streak-x, 30%);
+  background: rgba(20, 10, 0, 0.10);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Paper corner treatments — applied per-doc. A coffee/water stain
+   in one corner is a radial gradient blob via pseudo-element-on-pseudo
+   not possible, so we use a specialized class. */
+.paper-stain-tr::after {
+  background-image:
+    radial-gradient(
+      ellipse 140px 110px at 92% 10%,
+      rgba(110, 70, 30, 0.22) 0%,
+      rgba(110, 70, 30, 0.10) 35%,
+      transparent 70%
+    ),
+    url("/textures/scan-banding.svg");
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+}
+.paper-stain-bl::after {
+  background-image:
+    radial-gradient(
+      ellipse 130px 100px at 8% 92%,
+      rgba(95, 60, 25, 0.20) 0%,
+      rgba(95, 60, 25, 0.08) 40%,
+      transparent 70%
+    ),
+    url("/textures/scan-banding.svg");
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+}
+
+/* Folded corner — a small triangular fold visible in the top-right.
+   Pure CSS via clip-path on a pseudo-element. */
+.paper-fold-tr {
+  position: relative;
+}
+.paper-fold-tr > .paper-fold {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 38px;
+  height: 38px;
+  background:
+    linear-gradient(
+      225deg,
+      rgba(0, 0, 0, 0.18) 0%,
+      rgba(0, 0, 0, 0.10) 45%,
+      transparent 50%
+    );
+  clip-path: polygon(100% 0, 100% 100%, 0 0);
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* ===== INK TREATMENTS (per documentType) ===== */
+
+/* Typed: typewriter font + slight ink-bleed text-shadow. Color is
+   warm dark gray-brown rather than pure black so it reads as
+   absorbed-into-fiber. */
+.ink-typed {
+  font-family: var(--font-typewriter), Courier Prime, Courier New, monospace;
+  color: #1a120a;
+  text-shadow:
+    0.4px 0.3px 0 rgba(80, 50, 25, 0.18),
+    -0.2px 0 0 rgba(60, 40, 20, 0.10);
+  letter-spacing: 0.01em;
+}
+.ink-typed-faded {
+  font-family: var(--font-typewriter), Courier Prime, Courier New, monospace;
+  color: #3a2818;
+  text-shadow:
+    0.5px 0.4px 0 rgba(90, 60, 30, 0.14);
+  letter-spacing: 0.01em;
+  opacity: 0.92;
+}
+
+/* Mimeograph: blue-purple chromatic offset (the misregistration that
+   distinguishes a Gestetner copy from a xerox). */
+.ink-mimeo {
+  font-family: var(--font-typewriter), Courier Prime, Courier New, monospace;
+  color: #2a2360;
+  text-shadow:
+    1px 0 0 rgba(80, 50, 180, 0.28),
+    -0.5px 0 0 rgba(120, 60, 150, 0.20),
+    0.5px 0.3px 0 rgba(40, 30, 90, 0.18);
+  letter-spacing: 0.012em;
+}
+
+/* Handwritten ink: Caveat, dark navy fountain-pen ink, slight bleed. */
+.ink-hand {
+  font-family: var(--font-handwritten), "Bradley Hand", cursive;
+  color: #1a2855;
+  text-shadow: 0.5px 0.5px 0 rgba(30, 40, 80, 0.30);
+  font-size: 1.3em;
+  line-height: 1.5;
+}
+
+/* Modern laser-print: clean, dark, no text-shadow. */
+.ink-laser {
+  font-family: var(--font-typewriter), Courier Prime, Courier New, monospace;
+  color: #15110b;
+  letter-spacing: 0.005em;
+}
+
+/* ===== STAMPS ===== */
+
+.stamp {
+  display: inline-block;
+  font-family: var(--font-jetbrains), monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #8b1a1a;
+  border: 2.5px solid #8b1a1a;
+  padding: 4px 10px;
+  letter-spacing: 0.18em;
+  font-size: 11px;
+  background: rgba(255, 240, 230, 0.20);
+  text-shadow: 0 0 0.5px rgba(139, 26, 26, 0.65);
+  /* slight ink unevenness — multiple tight shadows = imperfect stamp */
+  box-shadow:
+    inset 0 0 0 0.5px rgba(139, 26, 26, 0.35),
+    0.5px 0.3px 0 rgba(139, 26, 26, 0.12);
+  opacity: 0.92;
+}
+.stamp-large {
+  font-size: 32px;
+  border-width: 5px;
+  border-style: double;
+  padding: 12px 28px;
+  letter-spacing: 0.30em;
+  background: rgba(255, 240, 230, 0.10);
+}
+
+/* ===== ANNOTATIONS (handwritten margins) ===== */
+
+.annotation {
+  font-family: var(--font-handwritten), "Bradley Hand", cursive;
+  color: #1e2a55;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.annotation-pencil {
+  font-family: var(--font-handwritten), "Bradley Hand", cursive;
+  color: #2a2620;
+  opacity: 0.78;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.annotation-red {
+  font-family: var(--font-handwritten), "Bradley Hand", cursive;
+  color: #8b1a1a;
+  font-size: 16px;
+}
+
+/* ===== REDACTION (override the dark-CRT version when on paper) ===== */
+
+.paper .redaction {
+  color: #1a1410;
+  background: #1a1410;
+  /* Slightly imperfect edges via box-shadow inset blur */
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.6),
+    0.5px 0 0 rgba(0, 0, 0, 0.85),
+    -0.5px 0 0 rgba(20, 15, 10, 0.6);
+  border-radius: 1px;
+}
+.paper .redaction::after {
+  background-image: url("/textures/redaction-noise.svg");
+  background-size: 32px 32px;
+  opacity: 0.55;
+  mix-blend-mode: normal;
+}
+
+/* ===== DESK SURFACE (for /station-atlas) =====
+   A darker textured background simulating wood/steel desk under
+   the documents. Only used on the desk-layout page. */
+.desk-surface {
+  background-color: #161210;
+  background-image:
+    radial-gradient(
+      ellipse 80% 60% at 50% 40%,
+      rgba(50, 35, 22, 0.55) 0%,
+      transparent 70%
+    ),
+    url("/textures/paper-noise.svg");
+  background-size: auto, 240px 240px;
+}
+
+/* ===== DOCUMENT FRAME (the wrapper that holds rotation + shadow) ===== */
+.doc-frame {
+  display: block;
+  margin: 4rem auto;
+  max-width: 64ch;
+  position: relative;
+}

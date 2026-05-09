@@ -30,6 +30,18 @@ const config: Config = {
       fontFamily: {
         mono: ["var(--font-jetbrains)", "ui-monospace", "monospace"],
         serif: ["var(--font-im-fell)", "Times New Roman", "serif"],
+        typewriter: [
+          "var(--font-typewriter)",
+          "Courier Prime",
+          "Courier New",
+          "monospace",
+        ],
+        handwritten: [
+          "var(--font-handwritten)",
+          "Bradley Hand",
+          "Comic Sans MS",
+          "cursive",
+        ],
       },
       letterSpacing: {
         section: "0.1em",

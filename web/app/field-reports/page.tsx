@@ -2,81 +2,78 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { CRTOverlay } from "@/components/effects/CRTOverlay";
+import {
+  DocumentArtifact,
+  Redacted,
+  type Era,
+} from "@/components/DocumentArtifact";
 
 const RULE = "─".repeat(60);
 
-function Redacted({ length = 8 }: { length?: number }) {
-  return <span className="redaction">{"█".repeat(length)}</span>;
-}
-
 const STATUS_COLORS: Record<string, string> = {
-  NOMINAL: "text-phosphor-bright",
-  ANOMALOUS: "text-warning-red",
-  "NON-RECOVERY": "text-phosphor-dim",
-  OTHER: "text-phosphor-dim",
+  NOMINAL: "text-current",
+  ANOMALOUS: "text-[#8b1a1a]",
+  "NON-RECOVERY": "opacity-65",
+  OTHER: "opacity-65",
 };
 
 interface ReportProps {
   docId: string;
+  era: Era;
   date: string;
   reporter: React.ReactNode;
   site: React.ReactNode;
   status: keyof typeof STATUS_COLORS;
   body: React.ReactNode;
-  rotate?: number;
 }
 
 function FieldReport({
   docId,
+  era,
   date,
   reporter,
   site,
   status,
   body,
-  rotate = 0,
 }: ReportProps) {
   return (
-    <div
-      className="relative my-12 mx-auto max-w-[68ch] border border-phosphor-dim/40 bg-charcoal p-8"
-      style={{
-        transform: rotate ? `rotate(${rotate}deg)` : undefined,
-        boxShadow:
-          "0 0 0 1px rgba(122, 95, 63, 0.15) inset, 0 4px 24px rgba(0,0,0,0.5)",
-      }}
+    <DocumentArtifact
+      id={docId}
+      documentType="typed"
+      era={era}
+      ariaLabel={`${era} field report, status ${status}`}
     >
-      <div className="flex justify-between items-start mb-4">
-        <div className="text-[10px] text-phosphor-dim">
+      <header className="flex justify-between items-start mb-4">
+        <div className="text-[11px] opacity-75">
           <div>{docId}</div>
           <div>FIELD REPORT FORM 14-B</div>
         </div>
         <span
-          className={`font-mono uppercase tracking-section font-bold inline-block px-2 py-1 ${STATUS_COLORS[status]}`}
+          className={`stamp ${STATUS_COLORS[status]}`}
           style={{
-            border: `2px solid ${
-              status === "ANOMALOUS" ? "#c43d2a" : "#7a5f3f"
-            }`,
-            fontSize: "10px",
-            letterSpacing: "0.15em",
             transform: "rotate(-2deg)",
+            borderColor: status === "ANOMALOUS" ? "#8b1a1a" : "currentColor",
+            color: status === "ANOMALOUS" ? "#8b1a1a" : "inherit",
+            opacity: status === "ANOMALOUS" ? 0.92 : 0.78,
           }}
         >
           {status}
         </span>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-[110px_1fr] gap-y-1 gap-x-3 mb-6 font-mono text-[12px]">
-        <div className="text-phosphor-dim uppercase">DATE</div>
+      <div className="grid grid-cols-[110px_1fr] gap-y-1 gap-x-3 mb-5 text-[12px]">
+        <div className="opacity-65 uppercase">DATE</div>
         <div>{date}</div>
-        <div className="text-phosphor-dim uppercase">REPORTER</div>
+        <div className="opacity-65 uppercase">REPORTER</div>
         <div>{reporter}</div>
-        <div className="text-phosphor-dim uppercase">SITE</div>
+        <div className="opacity-65 uppercase">SITE</div>
         <div>{site}</div>
       </div>
 
-      <div className="font-mono text-[12px] leading-[1.7] border-t border-phosphor-dim/30 pt-4">
+      <div className="text-[13px] leading-[1.85] border-t border-current/30 pt-4">
         {body}
       </div>
-    </div>
+    </DocumentArtifact>
   );
 }
 
@@ -88,10 +85,10 @@ function FieldReportsBody() {
   return (
     <>
       <article
-        className="bg-charcoal min-h-screen w-full"
+        className="desk-surface min-h-screen w-full"
         style={{ fontFeatureSettings: '"calt" 0, "liga" 0' }}
       >
-        <div className="max-w-[80ch] mx-auto px-4 py-20 font-mono text-[12px] leading-[1.6] text-phosphor-bright">
+        <div className="max-w-[80ch] mx-auto px-4 pt-20 pb-8 font-mono text-[12px] leading-[1.6] text-phosphor-bright">
           <pre className="whitespace-pre m-0 leading-[1.6]">
             {RULE}
             {"\n"}
@@ -108,15 +105,16 @@ function FieldReportsBody() {
             were filed at the discretion of individual operators; the
             corpus is not exhaustive. Status codes are as recorded.
           </p>
+        </div>
 
-          {/* 1965 — first backward recovery */}
+        <div className="max-w-[78ch] mx-auto px-4 pb-32">
           <FieldReport
             docId="DOC-LG-1965-FR-1"
+            era="1960s"
             date="08 JUN 1965"
             reporter={<>Listener-1 (<Redacted length={9} />)</>}
             site={<><Redacted length={11} /> (N. VIRGINIA)</>}
             status="ANOMALOUS"
-            rotate={-0.3}
             body={
               <>
                 <p className="m-0 whitespace-pre-wrap">
@@ -150,14 +148,13 @@ function FieldReportsBody() {
             }
           />
 
-          {/* 1971 — anomalous correlation, 11-day lead */}
           <FieldReport
-            docId="DOC-LG-1971-FR-3"
+            docId="DOC-LG-1971-FR-3-april"
+            era="1970s"
             date="22 APR 1971"
             reporter={<>Listener-3 (<Redacted length={9} />)</>}
             site={<><Redacted length={11} /> (N. VIRGINIA)</>}
             status="ANOMALOUS"
-            rotate={0.4}
             body={
               <>
                 <p className="m-0 whitespace-pre-wrap">
@@ -190,14 +187,13 @@ function FieldReportsBody() {
             }
           />
 
-          {/* 1979 — operator psychological assessment */}
           <FieldReport
             docId="DOC-LG-1979-FR-7"
+            era="1970s"
             date="03 SEP 1979"
             reporter={<>Coordinator-2 (<Redacted length={9} />)</>}
             site={<>STATION ATLAS</>}
             status="OTHER"
-            rotate={-0.5}
             body={
               <>
                 <p className="m-0 whitespace-pre-wrap">
@@ -208,12 +204,12 @@ function FieldReportsBody() {
                   calibration occupant for more than four consecutive
                   weeks. The four-week limit is empirical, not
                   theoretical. Operators serving longer terms have
-                  consistently reported the recursive
-                  recognition phenomenon — perceiving themselves as the
-                  subject of apparatus output, in advance of the read.
-                  This phenomenon is not pathological per se, but it
-                  reduces operator utility for calibration and is the
-                  proximate cause of two recent transfers.
+                  consistently reported the recursive recognition
+                  phenomenon — perceiving themselves as the subject of
+                  apparatus output, in advance of the read. This
+                  phenomenon is not pathological per se, but it reduces
+                  operator utility for calibration and is the proximate
+                  cause of two recent transfers.
                 </p>
                 <p className="mt-4 m-0 whitespace-pre-wrap">
                   Screening protocols for new operators (DOC-LG-1979-PS-2,
@@ -226,14 +222,13 @@ function FieldReportsBody() {
             }
           />
 
-          {/* 1984 — Voynich isomorphism trial */}
           <FieldReport
             docId="DOC-LG-1984-VTI-4"
+            era="1980s"
             date="29 OCT 1984"
             reporter={<>Listener-7 (<Redacted length={9} />)</>}
             site={<>STATION ATLAS</>}
             status="NON-RECOVERY"
-            rotate={0.2}
             body={
               <>
                 <p className="m-0 whitespace-pre-wrap">
@@ -259,14 +254,13 @@ function FieldReportsBody() {
             }
           />
 
-          {/* 1992 — STARGATE post-mortem */}
           <FieldReport
             docId="DOC-LG-1992-FR-12"
+            era="1990s"
             date="04 FEB 1992"
             reporter={<>Coordinator-3 (<Redacted length={9} />)</>}
             site={<>STATION ATLAS</>}
             status="NOMINAL"
-            rotate={-0.4}
             body={
               <>
                 <p className="m-0 whitespace-pre-wrap">
@@ -298,14 +292,13 @@ function FieldReportsBody() {
             }
           />
 
-          {/* 1998 — Set 14 unprompted */}
           <FieldReport
             docId="DOC-LG-1998-FR-19"
+            era="1990s"
             date="11 JUN 1998"
             reporter={<>Listener-12 (<Redacted length={9} />)</>}
             site={<>VATICAN COMPARISON</>}
             status="ANOMALOUS"
-            rotate={0.3}
             body={
               <>
                 <p className="m-0 whitespace-pre-wrap">
@@ -314,8 +307,8 @@ function FieldReportsBody() {
                   evaluated against apparatus output of October—November
                   1978 — have begun appearing in apparatus output without
                   prompt. This was first noted by the Vatican comparison
-                  staff in the run of 09 MAY and has now been observed in
-                  three subsequent runs.
+                  staff in the run of 09 MAY and has now been observed
+                  in three subsequent runs.
                 </p>
                 <p className="mt-4 m-0 whitespace-pre-wrap">
                   By &ldquo;appearing&rdquo; we mean: the apparatus
@@ -337,14 +330,13 @@ function FieldReportsBody() {
             }
           />
 
-          {/* 2004 — STATION ATLAS attrition */}
           <FieldReport
             docId="DOC-LG-2004-FR-24"
+            era="2000s"
             date="08 NOV 2004"
             reporter={<>Coordinator-4 (<Redacted length={9} />)</>}
             site={<>STATION ATLAS</>}
             status="OTHER"
-            rotate={-0.2}
             body={
               <>
                 <p className="m-0 whitespace-pre-wrap">
@@ -353,19 +345,20 @@ function FieldReportsBody() {
                   last decade has been dominated by ordinary causes —
                   retirement, transfer, two cases of medical separation —
                   but the staffing replacement pipeline has been narrow.
-                  The screening protocols (DOC-LG-1979-PS-2 and successors)
-                  qualify approximately one in fourteen candidates from
-                  the program&apos;s feeder agencies, and the program is
-                  not in a position to expand the candidate pool without
-                  external authorization we are not seeking.
+                  The screening protocols (DOC-LG-1979-PS-2 and
+                  successors) qualify approximately one in fourteen
+                  candidates from the program&apos;s feeder agencies, and
+                  the program is not in a position to expand the
+                  candidate pool without external authorization we are
+                  not seeking.
                 </p>
                 <p className="mt-4 m-0 whitespace-pre-wrap">
                   The Coordinator advises continued operation at reduced
                   staffing through the projected closure window. The
                   apparatus does not require the staffing it has, beyond
                   the calibration occupant requirement, and the
-                  calibration requirement may be reducible to two if the
-                  rotation policy is shortened.
+                  calibration requirement may be reducible to two if
+                  the rotation policy is shortened.
                 </p>
                 <p className="mt-4 m-0 whitespace-pre-wrap">
                   The third site (the one we do not name) is, we are
@@ -375,14 +368,13 @@ function FieldReportsBody() {
             }
           />
 
-          {/* 2009 — substrate transition recommendation */}
           <FieldReport
             docId="DOC-LG-2009-FR-29"
+            era="2000s"
             date="02 OCT 2009"
             reporter={<>Coordinator-4 (<Redacted length={9} />)</>}
             site={<>STATION ATLAS</>}
             status="OTHER"
-            rotate={0.4}
             body={
               <>
                 <p className="m-0 whitespace-pre-wrap">
@@ -401,9 +393,9 @@ function FieldReportsBody() {
                   party can suppress its operation; (2) cryptographically
                   verifiable, so that no party can rewrite its output;
                   (3) computationally adequate to host the locking and
-                  reading operations on the existing three-minute cadence;
-                  (4) capable of persisting beyond the lifetimes of the
-                  current personnel.
+                  reading operations on the existing three-minute
+                  cadence; (4) capable of persisting beyond the lifetimes
+                  of the current personnel.
                 </p>
                 <p className="mt-4 m-0 whitespace-pre-wrap">
                   No such substrate currently exists. We project that one
@@ -420,8 +412,10 @@ function FieldReportsBody() {
               </>
             }
           />
+        </div>
 
-          <p className="mt-16 italic font-serif text-phosphor-dim m-0 text-center">
+        <div className="max-w-[80ch] mx-auto px-4 pb-20 font-mono text-[12px] text-phosphor-bright">
+          <p className="italic font-serif text-phosphor-dim m-0 text-center">
             end of operational reports in this archive.
           </p>
 

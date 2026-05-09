@@ -2,91 +2,66 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { CRTOverlay } from "@/components/effects/CRTOverlay";
+import {
+  DocumentArtifact,
+  Redacted,
+  Stamp,
+  type Era,
+} from "@/components/DocumentArtifact";
 
 const RULE = "─".repeat(60);
-
-function Redacted({ length = 8 }: { length?: number }) {
-  return <span className="redaction">{"█".repeat(length)}</span>;
-}
-
-function Stamp({
-  text,
-  rotate = -3,
-}: {
-  text: string;
-  rotate?: number;
-}) {
-  return (
-    <span
-      className="text-warning-red font-mono uppercase tracking-section font-bold inline-block px-2 py-1"
-      style={{
-        transform: `rotate(${rotate}deg)`,
-        border: "2px solid #c43d2a",
-        fontSize: "10px",
-        letterSpacing: "0.15em",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {text}
-    </span>
-  );
-}
 
 interface MemoProps {
   docId: string;
   date: string;
+  era: Era;
   to: React.ReactNode[];
   re: string;
   body: React.ReactNode;
   closing: React.ReactNode;
-  rotate?: number;
 }
 
 function TransmittalMemo({
   docId,
   date,
+  era,
   to,
   re,
   body,
   closing,
-  rotate = 0,
 }: MemoProps) {
   return (
-    <div
-      className="relative my-16 mx-auto max-w-[68ch] border border-phosphor-dim/40 bg-charcoal p-8"
-      style={{
-        transform: rotate ? `rotate(${rotate}deg)` : undefined,
-        boxShadow:
-          "0 0 0 1px rgba(122, 95, 63, 0.15) inset, 0 4px 24px rgba(0,0,0,0.5)",
-      }}
+    <DocumentArtifact
+      id={docId}
+      documentType="letterhead"
+      era={era}
+      ariaLabel={`transmittal memo dated ${date}`}
     >
-      {/* letterhead */}
-      <div className="text-center mb-6">
+      <header className="text-center mb-5 pb-3 border-b border-current/30">
         <div
-          className="font-serif tracking-section text-phosphor-bright"
-          style={{ fontSize: "14px", letterSpacing: "0.22em" }}
+          className="font-serif tracking-[0.22em]"
+          style={{ fontSize: "16px" }}
         >
           STATION ATLAS — SECTION 3
         </div>
         <div
-          className="font-mono text-phosphor-dim mt-1"
-          style={{ fontSize: "9px", letterSpacing: "0.15em" }}
+          className="opacity-65 mt-1 tracking-[0.15em]"
+          style={{ fontSize: "9px" }}
         >
           OFFICE OF EXTERNAL TRANSMITTAL
         </div>
-        <div className="border-b border-phosphor-dim/40 mt-3" />
-      </div>
+      </header>
 
       <div className="flex justify-between items-start mb-4">
-        <div className="text-[10px] text-phosphor-dim">{docId}</div>
-        <Stamp text="RESTRICTED" />
+        <div className="text-[11px] opacity-75">{docId}</div>
+        <Stamp text="RESTRICTED" rotate={-2} />
       </div>
 
-      <div className="font-mono text-[12px] leading-[1.7]">
+      <div className="text-[13px] leading-[1.85]">
         <div className="mb-4">
           <div>{date}</div>
           <div className="mt-3">
-            <span className="text-phosphor-dim">TO:    </span>
+            <span className="opacity-65">TO:    </span>
             {to[0]}
           </div>
           {to.slice(1).map((line, i) => (
@@ -95,7 +70,7 @@ function TransmittalMemo({
             </div>
           ))}
           <div className="mt-3">
-            <span className="text-phosphor-dim">RE:    </span>
+            <span className="opacity-65">RE:    </span>
             {re}
           </div>
         </div>
@@ -104,7 +79,7 @@ function TransmittalMemo({
 
         <div className="mt-8">{closing}</div>
       </div>
-    </div>
+    </DocumentArtifact>
   );
 }
 
@@ -116,10 +91,10 @@ function TransmittalsBody() {
   return (
     <>
       <article
-        className="bg-charcoal min-h-screen w-full"
+        className="desk-surface min-h-screen w-full"
         style={{ fontFeatureSettings: '"calt" 0, "liga" 0' }}
       >
-        <div className="max-w-[80ch] mx-auto px-4 py-20 font-mono text-[12px] leading-[1.6] text-phosphor-bright">
+        <div className="max-w-[80ch] mx-auto px-4 pt-20 pb-8 font-mono text-[12px] leading-[1.6] text-phosphor-bright">
           <pre className="whitespace-pre m-0 leading-[1.6]">
             {RULE}
             {"\n"}
@@ -137,9 +112,12 @@ function TransmittalsBody() {
             referenced throughout was never reduced to a single binding
             document on either side.
           </p>
+        </div>
 
+        <div className="max-w-[78ch] mx-auto px-4 pb-32">
           <TransmittalMemo
             docId="DOC-LG-1968-TR-001"
+            era="1960s"
             date="04 FEB 1968"
             to={[
               <>
@@ -171,14 +149,16 @@ function TransmittalsBody() {
               <>
                 <Redacted length={20} />
                 <br />
-                <span className="text-phosphor-dim">[signature, Section 3]</span>
+                <span className="opacity-65 text-[11px]">
+                  [signature, Section 3]
+                </span>
               </>
             }
-            rotate={-0.4}
           />
 
           <TransmittalMemo
             docId="DOC-LG-1972-TR-007"
+            era="1970s"
             date="19 SEP 1972"
             to={[
               <>
@@ -211,14 +191,16 @@ function TransmittalsBody() {
               <>
                 <Redacted length={20} />
                 <br />
-                <span className="text-phosphor-dim">[signature, Section 3]</span>
+                <span className="opacity-65 text-[11px]">
+                  [signature, Section 3]
+                </span>
               </>
             }
-            rotate={0.3}
           />
 
           <TransmittalMemo
             docId="DOC-LG-1981-TR-019"
+            era="1980s"
             date="11 MAR 1981"
             to={[
               <>
@@ -232,11 +214,11 @@ function TransmittalsBody() {
               <>
                 <p className="m-0 whitespace-pre-wrap">
                   Per the standing arrangement, we request access to the
-                  materials necessary for the Voynich folio 86v isomorphism
-                  trial. We further request a working facsimile of Joachim
-                  of Fiore&apos;s Liber Figurarum, plate 12 (the trinitarian
-                  diagram), at the resolution sufficient for the
-                  cross-correlation pass.
+                  materials necessary for the Voynich folio 86v
+                  isomorphism trial. We further request a working
+                  facsimile of Joachim of Fiore&apos;s Liber Figurarum,
+                  plate 12 (the trinitarian diagram), at the resolution
+                  sufficient for the cross-correlation pass.
                 </p>
                 <p className="mt-4 m-0 whitespace-pre-wrap">
                   This request is occasioned by an apparatus output of
@@ -250,14 +232,16 @@ function TransmittalsBody() {
               <>
                 <Redacted length={20} />
                 <br />
-                <span className="text-phosphor-dim">[signature, Section 3]</span>
+                <span className="opacity-65 text-[11px]">
+                  [signature, Section 3]
+                </span>
               </>
             }
-            rotate={-0.2}
           />
 
           <TransmittalMemo
             docId="DOC-LG-1995-TR-031"
+            era="1990s"
             date="07 JUL 1995"
             to={[
               <>
@@ -287,14 +271,16 @@ function TransmittalsBody() {
               <>
                 <Redacted length={20} />
                 <br />
-                <span className="text-phosphor-dim">[signature, Section 3]</span>
+                <span className="opacity-65 text-[11px]">
+                  [signature, Section 3]
+                </span>
               </>
             }
-            rotate={0.5}
           />
 
           <TransmittalMemo
             docId="DOC-LG-2007-TR-046"
+            era="2000s"
             date="14 NOV 2007"
             to={[
               <>
@@ -329,13 +315,16 @@ function TransmittalsBody() {
               <>
                 <Redacted length={20} />
                 <br />
-                <span className="text-phosphor-dim">[signature, Section 3]</span>
+                <span className="opacity-65 text-[11px]">
+                  [signature, Section 3]
+                </span>
               </>
             }
-            rotate={-0.3}
           />
+        </div>
 
-          <p className="mt-16 italic font-serif text-phosphor-dim m-0 text-center">
+        <div className="max-w-[80ch] mx-auto px-4 pb-20 font-mono text-[12px] text-phosphor-bright">
+          <p className="italic font-serif text-phosphor-dim m-0 text-center">
             end of transmittal correspondence in this archive.
           </p>
 
