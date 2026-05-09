@@ -1,5 +1,4 @@
-import { Connection, PublicKey } from "@solana/web3.js";
-import { Program } from "@coral-xyz/anchor";
+import { PublicKey } from "@solana/web3.js";
 import {
   buildProgram,
   decodeUri,
@@ -21,17 +20,42 @@ let cachedCorpus: { at: number; entries: CorpusEntry[] } | null = null;
 let cachedLayer1: { at: number; entries: { index: number; text: string; locked_at: number }[] } | null = null;
 let cachedLayer2: { at: number; entries: { index: number; text: string; locked_at: number }[] } | null = null;
 
+// Batched fetchMultiple: Anchor allows up to 100 addresses per
+// getMultipleAccountsInfo RPC call, but the public Solana endpoint
+// limits to 100. Run several batches in parallel for throughput.
+async function fetchMultipleBatched<T>(
+  programAccount: any,
+  pdas: PublicKey[],
+  chunkSize = 100
+): Promise<(T | null)[]> {
+  const chunks: PublicKey[][] = [];
+  for (let i = 0; i < pdas.length; i += chunkSize) {
+    chunks.push(pdas.slice(i, i + chunkSize));
+  }
+  const results = await Promise.all(
+    chunks.map(async (chunk) => {
+      try {
+        return (await programAccount.fetchMultiple(chunk)) as (T | null)[];
+      } catch {
+        return chunk.map(() => null as T | null);
+      }
+    })
+  );
+  return results.flat();
+}
+
 /**
  * Walk every EpochSquare PDA from epoch 1 → current and decode the
- * prophecy text. Results cached in-process for an hour. Vercel
- * function instances are short-lived so the cache is best-effort —
- * subsequent invocations may rebuild.
+ * prophecy text. Uses Anchor's fetchMultiple under the hood
+ * (getMultipleAccountsInfo) — 700 epochs becomes 7 RPC calls instead
+ * of 700. Results cached in-process for an hour. Vercel function
+ * instances are short-lived so the cache is best-effort.
  */
 export async function fetchAtomicCorpus(): Promise<CorpusEntry[]> {
   if (cachedCorpus && Date.now() - cachedCorpus.at < CACHE_TTL_MS) {
     return cachedCorpus.entries;
   }
-  const { connection: _connection, program } = buildProgram();
+  const { program } = buildProgram();
   let currentEpoch = 0;
   try {
     const lg: any = await (program.account as any).lookingGlass.fetch(
@@ -42,31 +66,24 @@ export async function fetchAtomicCorpus(): Promise<CorpusEntry[]> {
     return [];
   }
   if (currentEpoch === 0) return [];
-  const targets: number[] = [];
-  for (let ep = 1; ep <= currentEpoch; ep++) targets.push(ep);
-  // Fetch in batches of 25 to avoid hammering the public RPC.
+  const epochs: number[] = [];
+  for (let ep = 1; ep <= currentEpoch; ep++) epochs.push(ep);
+  const pdas = epochs.map((ep) => epochSquarePda(ep));
+  const accounts = await fetchMultipleBatched<any>(
+    (program.account as any).epochSquare,
+    pdas
+  );
   const out: CorpusEntry[] = [];
-  for (let i = 0; i < targets.length; i += 25) {
-    const batch = targets.slice(i, i + 25);
-    const results = await Promise.all(
-      batch.map(async (ep) => {
-        try {
-          const sq: any = await (program.account as any).epochSquare.fetch(
-            epochSquarePda(ep)
-          );
-          const text = decodeUri(sq.prophecyUri ?? "");
-          if (!text) return null;
-          return {
-            epoch: ep,
-            text,
-            locked_at: Number(sq.lockedAt),
-          };
-        } catch {
-          return null;
-        }
-      })
-    );
-    for (const r of results) if (r) out.push(r);
+  for (let i = 0; i < epochs.length; i++) {
+    const sq = accounts[i];
+    if (!sq) continue;
+    const text = decodeUri(sq.prophecyUri ?? "");
+    if (!text) continue;
+    out.push({
+      epoch: epochs[i],
+      text,
+      locked_at: Number(sq.lockedAt),
+    });
   }
   cachedCorpus = { at: Date.now(), entries: out };
   return out;
@@ -91,42 +108,40 @@ export async function fetchLayer1Corpus(): Promise<
   if (nextL1 === 0) return [];
   const indices: number[] = [];
   for (let i = 0; i < nextL1; i++) indices.push(i);
-  const out: { index: number; text: string; locked_at: number }[] = [];
-  for (let i = 0; i < indices.length; i += 10) {
-    const batch = indices.slice(i, i + 10);
-    const results = await Promise.all(
-      batch.map(async (idx) => {
+  const pdas = indices.map((idx) => layer1Pda(idx));
+  const accounts = await fetchMultipleBatched<any>(
+    (program.account as any).synthesisLayer1,
+    pdas
+  );
+  // Resolve synthesis_uri text in parallel.
+  const out = await Promise.all(
+    accounts.map(async (acc) => {
+      if (!acc) return null;
+      const uri: string = acc.synthesisUri ?? "";
+      let text = "";
+      if (uri) {
         try {
-          const acc: any = await (
-            program.account as any
-          ).synthesisLayer1.fetch(layer1Pda(idx));
-          const uri: string = acc.synthesisUri ?? "";
-          let text = "";
-          if (uri) {
-            try {
-              const r = await fetch(uri);
-              if (r.ok) {
-                const body = (await r.json()) as { text?: string };
-                text = body.text ?? "";
-              }
-            } catch {
-              /* swallow */
-            }
+          const r = await fetch(uri);
+          if (r.ok) {
+            const body = (await r.json()) as { text?: string };
+            text = body.text ?? "";
           }
-          return {
-            index: Number(acc.layer1Index),
-            text,
-            locked_at: Number(acc.lockedAt),
-          };
         } catch {
-          return null;
+          /* swallow */
         }
-      })
-    );
-    for (const r of results) if (r) out.push(r);
-  }
-  cachedLayer1 = { at: Date.now(), entries: out };
-  return out;
+      }
+      return {
+        index: Number(acc.layer1Index),
+        text,
+        locked_at: Number(acc.lockedAt),
+      };
+    })
+  );
+  const filtered = out.filter(
+    (e): e is { index: number; text: string; locked_at: number } => e !== null
+  );
+  cachedLayer1 = { at: Date.now(), entries: filtered };
+  return filtered;
 }
 
 export async function fetchLayer2Corpus(): Promise<
@@ -146,12 +161,16 @@ export async function fetchLayer2Corpus(): Promise<
     return [];
   }
   if (nextL2 === 0) return [];
-  const out: { index: number; text: string; locked_at: number }[] = [];
-  for (let i = 0; i < nextL2; i++) {
-    try {
-      const acc: any = await (program.account as any).synthesisLayer2.fetch(
-        layer2Pda(i)
-      );
+  const indices: number[] = [];
+  for (let i = 0; i < nextL2; i++) indices.push(i);
+  const pdas = indices.map((idx) => layer2Pda(idx));
+  const accounts = await fetchMultipleBatched<any>(
+    (program.account as any).synthesisLayer2,
+    pdas
+  );
+  const out = await Promise.all(
+    accounts.map(async (acc) => {
+      if (!acc) return null;
       const uri: string = acc.synthesisUri ?? "";
       let text = "";
       if (uri) {
@@ -165,15 +184,16 @@ export async function fetchLayer2Corpus(): Promise<
           /* swallow */
         }
       }
-      out.push({
+      return {
         index: Number(acc.layer2Index),
         text,
         locked_at: Number(acc.lockedAt),
-      });
-    } catch {
-      /* skip */
-    }
-  }
-  cachedLayer2 = { at: Date.now(), entries: out };
-  return out;
+      };
+    })
+  );
+  const filtered = out.filter(
+    (e): e is { index: number; text: string; locked_at: number } => e !== null
+  );
+  cachedLayer2 = { at: Date.now(), entries: filtered };
+  return filtered;
 }
