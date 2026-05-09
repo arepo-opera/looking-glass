@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchAtomicCorpus } from "@/lib/corpus-helpers";
-import { fetchSeedsForEpoch } from "@/lib/oracle-helpers";
+import { kvMget } from "@/lib/kv-helpers";
+import type { SeedRecord } from "@/lib/oracle-helpers";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -36,20 +37,25 @@ export async function GET() {
   if (corpus.length === 0) {
     return NextResponse.json({ note: "corpus empty", correlations: {} });
   }
-  // Pull seed records in parallel for every epoch in the corpus. Most
-  // will be null (epochs that locked before Phase 20B-final's seed-
-  // recording landed). The correlation pass only includes points
-  // where seeds exist.
-  const seedsByEpoch = new Map<
-    number,
-    Awaited<ReturnType<typeof fetchSeedsForEpoch>>
-  >();
-  await Promise.all(
-    corpus.map(async (e) => {
-      const s = await fetchSeedsForEpoch(e.epoch);
-      seedsByEpoch.set(e.epoch, s);
-    })
-  );
+  // Batched MGET: pull every seed record in one (chunked) round trip
+  // instead of N parallel KV GETs. Most epochs will be null (locked
+  // before Phase 20B-final's seed-recording landed). The correlation
+  // pass only includes points where seeds exist.
+  const seedKeys = corpus.map((e) => `seeds:epoch:${e.epoch}`);
+  const seedRaws = await kvMget(seedKeys);
+  const seedsByEpoch = new Map<number, SeedRecord | null>();
+  for (let i = 0; i < corpus.length; i++) {
+    const raw = seedRaws[i];
+    let parsed: SeedRecord | null = null;
+    if (raw !== null) {
+      try {
+        parsed = JSON.parse(raw) as SeedRecord;
+      } catch {
+        parsed = null;
+      }
+    }
+    seedsByEpoch.set(corpus[i].epoch, parsed);
+  }
   const withSeeds = corpus.filter((e) => seedsByEpoch.get(e.epoch) !== null);
 
   if (withSeeds.length < 5) {

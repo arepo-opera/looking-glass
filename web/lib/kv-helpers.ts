@@ -70,6 +70,32 @@ export async function kvKeys(pattern: string, limit = 1000): Promise<string[]> {
   return out.slice(0, limit);
 }
 
+// Batched GET via Upstash REST MGET. Returns one entry per key in the
+// same order. Missing keys come back as null. Internally chunks at 100
+// keys/request because URLs grow long.
+export async function kvMget(keys: string[]): Promise<(string | null)[]> {
+  if (!kvConfigured() || keys.length === 0) return keys.map(() => null);
+  const out: (string | null)[] = [];
+  for (let i = 0; i < keys.length; i += 100) {
+    const chunk = keys.slice(i, i + 100);
+    const path = chunk.map((k) => encodeURIComponent(k)).join("/");
+    const url = `${KV_URL}/mget/${path}`;
+    const resp = await fetch(url, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${KV_TOKEN}` },
+    });
+    if (!resp.ok) {
+      // Conservative fallback: pad with nulls so caller indexes line up.
+      for (let j = 0; j < chunk.length; j++) out.push(null);
+      continue;
+    }
+    const body = (await resp.json()) as { result: (string | null)[] };
+    const arr = body.result ?? chunk.map(() => null);
+    for (const v of arr) out.push(v ?? null);
+  }
+  return out;
+}
+
 export function kvErrorResponse() {
   return {
     error: "storage not configured",
