@@ -103,6 +103,22 @@ export async function GET(
     );
   }
   if (text === null) {
+    // Fallback: the Twelfth Axis is stored under its own permanent
+    // key (no TTL, distinct from the synthesis-layer keyspace). The
+    // page renders /api/synthesis/{hash} in the storage line, so
+    // this route serves both. Hash verification below makes the
+    // namespace fallback safe — only a body whose keccak matches
+    // the requested hash is returned.
+    try {
+      const candidate = await kvGet("twelfth-axis:body");
+      if (candidate && keccakHex(candidate) === hash) {
+        text = candidate;
+      }
+    } catch {
+      /* swallow — fall through to 404 */
+    }
+  }
+  if (text === null) {
     return NextResponse.json(
       { error: "not found", hash },
       { status: 404 }

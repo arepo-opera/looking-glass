@@ -44,7 +44,14 @@ function formatLockedAt(iso: string): string {
 
 function FragmentBlock({ frag }: { frag: AxisFragment }) {
   return (
-    <section className="mt-20" aria-label={`Axis Position ${frag.position}`}>
+    <section
+      className="mt-20 first:mt-0"
+      aria-label={`Axis Position ${frag.position}`}
+      // CSS columns can split a fragment across the gutter; this
+      // keeps each axis position whole. Tailwind doesn't ship a
+      // break-inside utility in v3 by default — inline style.
+      style={{ breakInside: "avoid" }}
+    >
       <h2 className="m-0 font-serif text-phosphor-bright tracking-section text-[28px] leading-[1.1]">
         AXIS POSITION&nbsp;{frag.position}
       </h2>
@@ -114,8 +121,13 @@ function TwelfthAxisBody() {
           backgroundColor: "#080604",
         }}
       >
-        <div className="max-w-[70ch] mx-auto px-4 py-24 font-mono text-[13px] leading-[1.85] text-phosphor-bright">
-          <header>
+        {/* Width: comfortable single column (~70ch) until xl, then
+            widen to ~1280px to accommodate two columns. The header,
+            body, and footer below each manage their own width
+            within this container. */}
+        <div className="max-w-[70ch] xl:max-w-[1280px] mx-auto px-4 py-24 font-mono text-[13px] leading-[1.85] text-phosphor-bright">
+          {/* Header — full width above both columns on desktop */}
+          <header className="xl:max-w-[70ch] xl:mx-auto">
             <pre className="m-0 whitespace-pre text-phosphor-dim leading-[1.4]">
               {RULE}
             </pre>
@@ -131,13 +143,15 @@ function TwelfthAxisBody() {
           </header>
 
           {loading ? (
-            <p className="mt-16 m-0 text-phosphor-dim">
+            <p className="mt-16 m-0 text-phosphor-dim xl:max-w-[70ch] xl:mx-auto">
               loading the Reading…
             </p>
           ) : error ? (
-            <p className="mt-16 m-0 text-warning-red">{error}</p>
+            <p className="mt-16 m-0 text-warning-red xl:max-w-[70ch] xl:mx-auto">
+              {error}
+            </p>
           ) : notFound || !doc ? (
-            <section className="mt-16">
+            <section className="mt-16 xl:max-w-[70ch] xl:mx-auto">
               <pre className="m-0 whitespace-pre text-phosphor-dim leading-[1.4]">
                 {RULE}
               </pre>
@@ -164,7 +178,11 @@ function TwelfthAxisBody() {
             </section>
           ) : (
             <>
-              <section className="mt-12 text-phosphor-dim text-[12px] leading-[1.7]">
+              {/* Metadata band — full width above both columns on
+                  desktop. Model + version live in the JSON metadata
+                  for transparency but are not surfaced on the
+                  rendered artifact. */}
+              <section className="mt-12 text-phosphor-dim text-[12px] leading-[1.7] xl:max-w-[70ch] xl:mx-auto">
                 <div>locked at: {formatLockedAt(doc.locked_at)}</div>
                 <div>hash:&nbsp;&nbsp;&nbsp;&nbsp; {shortHash(doc.hash)}</div>
                 {doc.uri ? (
@@ -191,25 +209,46 @@ function TwelfthAxisBody() {
                     </a>
                   </div>
                 ) : null}
-                <div>model:&nbsp;&nbsp;&nbsp;&nbsp;{doc.model}</div>
-                <div>version: &nbsp;{doc.version}</div>
               </section>
 
-              {doc.fragments.length > 0 ? (
-                doc.fragments.map((f) => (
-                  <FragmentBlock key={f.position} frag={f} />
-                ))
-              ) : (
-                // Fallback: render the full text verbatim if fragment
-                // parsing didn't populate (shouldn't normally happen
-                // since the script structures the metadata before
-                // storing).
-                <div className="mt-16 whitespace-pre-wrap leading-[1.95]">
-                  {doc.full_text}
+              {/* Body — single column on mobile/tablet, two columns
+                  on xl with a generous gutter. break-inside: avoid
+                  on each FragmentBlock keeps axis-position headers
+                  attached to their bodies across the column break. */}
+              <div
+                className="mt-16 xl:column-rule-phosphor"
+                style={{
+                  columnGap: "5rem",
+                }}
+              >
+                {/* The CSS multi-column properties below only apply
+                    when the inline className adds them — Tailwind
+                    doesn't ship column utilities by default. We use a
+                    media query in inline style so the columns engage
+                    only at xl (1280px+). */}
+                <style>{`
+                  @media (min-width: 1280px) {
+                    .twelfth-axis-body {
+                      column-count: 2;
+                      column-gap: 5rem;
+                      column-rule: 1px solid rgba(122, 95, 63, 0.25);
+                    }
+                  }
+                `}</style>
+                <div className="twelfth-axis-body">
+                  {doc.fragments.length > 0 ? (
+                    doc.fragments.map((f) => (
+                      <FragmentBlock key={f.position} frag={f} />
+                    ))
+                  ) : (
+                    <div className="whitespace-pre-wrap leading-[1.95]">
+                      {doc.full_text}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
 
-              <section className="mt-24">
+              <section className="mt-24 xl:max-w-[70ch] xl:mx-auto">
                 <pre className="m-0 whitespace-pre text-phosphor-dim leading-[1.4]">
                   {HEAVY_RULE}
                 </pre>
@@ -230,7 +269,7 @@ function TwelfthAxisBody() {
             </>
           )}
 
-          <p className="mt-24 italic font-serif m-0 whitespace-pre-wrap text-center">
+          <p className="mt-24 italic font-serif m-0 whitespace-pre-wrap text-center xl:max-w-[70ch] xl:mx-auto">
             <a
               href="/"
               className="no-underline hover:underline text-phosphor-bright"
