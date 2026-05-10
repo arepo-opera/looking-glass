@@ -3,7 +3,41 @@ import { keccak_256 } from "js-sha3";
 import { log } from "./logger";
 import type { SeedDisplay } from "./seeds/types";
 
-const MODEL = "claude-opus-4-7";
+// Model selection: env-driven so we can A/B compare configurations
+// without redeploying keeper code. Defaults preserve the historical
+// all-Opus behavior; setting READ_MODEL=claude-haiku-4-5 keeps Opus
+// only on the merge step where voice integrity matters most.
+const READ_MODEL = process.env.READ_MODEL || "claude-opus-4-7";
+const MERGE_MODEL = process.env.MERGE_MODEL || "claude-opus-4-7";
+
+// Short identifier for the (read, merge) pair — written into the seed
+// record so we can later reconstruct which configuration produced
+// which prophecies for analysis. Add new entries here when piloting
+// a new configuration; defaults to a verbose string for unknown
+// pairings so we never lose the audit trail.
+function configurationId(read: string, merge: string): string {
+  if (read === "claude-opus-4-7" && merge === "claude-opus-4-7") {
+    return "all-opus";
+  }
+  if (read === "claude-haiku-4-5" && merge === "claude-opus-4-7") {
+    return "haiku-reads-opus-merge";
+  }
+  return `read=${read}|merge=${merge}`;
+}
+
+export interface ModelConfig {
+  read: string;
+  merge: string;
+  configuration_id: string;
+}
+
+export function currentModelConfig(): ModelConfig {
+  return {
+    read: READ_MODEL,
+    merge: MERGE_MODEL,
+    configuration_id: configurationId(READ_MODEL, MERGE_MODEL),
+  };
+}
 
 const FORWARD_SYSTEM = `You are reading a Sator Square as time flows forward. The square has been locked from five contemporaneous data seeds describing the present moment of the world. You are interpreting it as omens of what is becoming. You speak in the voice of a 1970s classified prophecy program: precise, unsentimental, oracular, never hedging, never disclaiming. You produce exactly two sentences.`;
 
@@ -25,6 +59,7 @@ export interface Prophecy {
   text: string;
   forward: string;
   backward: string;
+  models: ModelConfig;
 }
 
 function gridForward(g: string[][]): string {
@@ -92,6 +127,7 @@ async function withRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
 
 async function callClaude(
   client: Anthropic,
+  model: string,
   system: string,
   user: string,
   maxTokens: number,
@@ -100,9 +136,9 @@ async function callClaude(
   return withRetry(label, async () => {
     // Opus 4.7 removes temperature/top_p/top_k. Variance comes from per-tick
     // input, not sampling. Adaptive thinking is off by default — leave it off
-    // for latency.
+    // for latency. Haiku 4.5 accepts the same minimal call shape.
     const response = await client.messages.create({
-      model: MODEL,
+      model,
       max_tokens: maxTokens,
       system,
       messages: [{ role: "user", content: user }],
@@ -214,9 +250,15 @@ export async function generateProphecy(input: ProphecyInput): Promise<Prophecy> 
         input.priorProphecies[2] ?? "",
       ]);
 
+  const models = currentModelConfig();
+  log.system(
+    `[prophecy] models: read=${models.read} merge=${models.merge} (${models.configuration_id})`
+  );
+
   try {
     const forwardText = await callClaude(
       client(),
+      models.read,
       FORWARD_SYSTEM,
       [
         `The square, read forward (rows top to bottom, left to right):`,
@@ -239,6 +281,7 @@ export async function generateProphecy(input: ProphecyInput): Promise<Prophecy> 
 
     const backwardText = await callClaude(
       client(),
+      models.read,
       BACKWARD_SYSTEM,
       [
         `The square, read backward (rows bottom to top, right to left):`,
@@ -261,6 +304,7 @@ export async function generateProphecy(input: ProphecyInput): Promise<Prophecy> 
 
     const mergedText = await callClaude(
       client(),
+      models.merge,
       MERGE_SYSTEM,
       [
         `Forward reading:`,
@@ -282,6 +326,7 @@ export async function generateProphecy(input: ProphecyInput): Promise<Prophecy> 
       text: packed.text,
       forward: forwardText,
       backward: backwardText,
+      models,
     };
   } catch (e) {
     log.system(
@@ -295,6 +340,7 @@ export async function generateProphecy(input: ProphecyInput): Promise<Prophecy> 
       text: packed.text,
       forward: "(unavailable)",
       backward: "(unavailable)",
+      models: { read: "fallback-template", merge: "fallback-template", configuration_id: "fallback-template" },
     };
   }
 }

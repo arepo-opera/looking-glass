@@ -89,6 +89,8 @@ export async function POST(
       );
     }
   }
+  // models config is optional. Pre-Phase-A seeds don't carry it; treat
+  // them as "all-opus" implicitly when reading.
   const doc = {
     captured_at_ts:
       typeof body.captured_at_ts === "number"
@@ -101,6 +103,19 @@ export async function POST(
     echo: body.echo ?? {},
     drift: body.drift ?? {},
     spine_owner: spineOwnerForEpoch(epoch),
+    ...(body.models &&
+    typeof body.models === "object" &&
+    typeof body.models.read === "string" &&
+    typeof body.models.merge === "string" &&
+    typeof body.models.configuration_id === "string"
+      ? {
+          models: {
+            read: body.models.read,
+            merge: body.models.merge,
+            configuration_id: body.models.configuration_id,
+          },
+        }
+      : {}),
   };
   try {
     await kvSet(key, JSON.stringify(doc), SEEDS_TTL_SECONDS);

@@ -1,5 +1,6 @@
 import { log } from "./logger";
 import type { SeedDisplay } from "./seeds/types";
+import type { ModelConfig } from "./prophecy-generator";
 
 // After each successful submit_prophecy, the keeper POSTs the
 // structured seed record to /api/seeds/{epoch} so the dashboard's
@@ -69,13 +70,15 @@ function structureSeeds(
 
 export async function recordSeedsForEpoch(
   epoch: number,
-  seeds: SeedDisplay[]
+  seeds: SeedDisplay[],
+  models?: ModelConfig
 ): Promise<void> {
   try {
     const structured = structureSeeds(seeds);
     const body = {
       captured_at_ts: Math.floor(Date.now() / 1000),
       ...structured,
+      ...(models ? { models } : {}),
     };
     const url = `${ENDPOINT_BASE}/${epoch}`;
     const resp = await fetch(url, {

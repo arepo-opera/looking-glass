@@ -183,7 +183,7 @@ export async function respondToProphecyRequest(
     // Phase 20B-final: record the seed values that produced this lock
     // so the dashboard's archive endpoint can merge them into
     // /api/archive.json. Fire-and-forget; idempotent at the API.
-    void recordSeedsForEpoch(epoch, context.seedDisplays);
+    void recordSeedsForEpoch(epoch, context.seedDisplays, prophecy.models);
   } catch (e: any) {
     const s = String(e?.message ?? e);
     if (s.includes("AlreadySubmitted")) {
