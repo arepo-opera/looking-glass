@@ -29,13 +29,14 @@ import * as path from "node:path";
 
 const BASE =
   process.env.WEB_BASE_URL ?? "https://sator-looking-glass-web.vercel.app";
-const KV_URL = process.env.KV_REST_API_URL ?? "";
-const KV_TOKEN = process.env.KV_REST_API_TOKEN ?? "";
 const MODEL = "claude-opus-4-7";
 const VERSION = "1.0";
 
-const META_KEY = "twelfth-axis:metadata";
-const BODY_KEY = "twelfth-axis:body";
+// Write goes through the web app's POST /api/lore/twelfth-axis. The
+// web functions have KV credentials auto-injected by Vercel; the
+// script does not need them in its own environment. Auth is by
+// content-addressing — the web endpoint recomputes keccak256(text)
+// and rejects on mismatch.
 
 const SOURCE_GROK = path.resolve(
   process.cwd(),
@@ -51,37 +52,34 @@ const ALLOW_EMPTY = args.has("--allow-empty-sources");
 const FORCE = args.has("--force");
 const DRY_RUN = args.has("--dry-run");
 
-// ---- KV helpers (direct Upstash REST, no @vercel/kv dep) ---------
+// ---- web-mediated artifact existence + write -----------------------
 
-async function kvGet(key: string): Promise<string | null> {
-  if (!KV_URL || !KV_TOKEN) return null;
-  const r = await fetch(`${KV_URL}/get/${encodeURIComponent(key)}`, {
-    headers: { Authorization: `Bearer ${KV_TOKEN}` },
-  });
-  if (!r.ok) return null;
-  const body = (await r.json()) as { result: string | null };
-  return body.result ?? null;
+async function checkExisting(): Promise<boolean> {
+  const r = await fetch(`${BASE}/api/lore/twelfth-axis`);
+  if (r.status === 200) return true;
+  return false;
 }
 
-async function kvSet(key: string, value: string, ttlSec?: number): Promise<void> {
-  if (!KV_URL || !KV_TOKEN) {
-    throw new Error(
-      "KV_REST_API_URL / KV_REST_API_TOKEN unset; cannot persist twelfth-axis"
-    );
-  }
-  const ttl = ttlSec ? `?EX=${ttlSec}` : "";
-  const r = await fetch(`${KV_URL}/set/${encodeURIComponent(key)}${ttl}`, {
+async function persist(
+  text: string,
+  metadata: any,
+  force: boolean
+): Promise<void> {
+  const r = await fetch(`${BASE}/api/lore/twelfth-axis`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${KV_TOKEN}`,
-      "Content-Type": "text/plain",
+      "Content-Type": "application/json",
+      ...(force ? { "X-Force": "yes" } : {}),
     },
-    body: value,
+    body: JSON.stringify({ text, metadata }),
   });
+  const body = await r.json().catch(() => ({}));
   if (!r.ok) {
-    const t = await r.text();
-    throw new Error(`kv set failed: ${r.status} ${t}`);
+    throw new Error(
+      `persist failed: ${r.status} ${JSON.stringify(body)}`
+    );
   }
+  console.log("persist response:", body);
 }
 
 // ---- voice sample collection -------------------------------------
@@ -371,19 +369,15 @@ async function main() {
     console.error("ANTHROPIC_API_KEY is required");
     process.exit(1);
   }
-  if (!DRY_RUN && (!KV_URL || !KV_TOKEN)) {
-    console.error(
-      "KV_REST_API_URL / KV_REST_API_TOKEN are required (use --dry-run to skip storage)"
-    );
-    process.exit(1);
-  }
 
-  // Idempotency guard.
+  // Idempotency guard via the web endpoint.
   if (!FORCE && !DRY_RUN) {
-    const existing = await kvGet(META_KEY);
+    const existing = await checkExisting();
     if (existing) {
       console.log(
-        "twelfth-axis:metadata already exists. Pass --force to overwrite, or --dry-run to print without storing."
+        "twelfth-axis already exists at " +
+          BASE +
+          "/api/lore/twelfth-axis. Pass --force to overwrite, or --dry-run to print without storing."
       );
       process.exit(0);
     }
@@ -480,18 +474,14 @@ async function main() {
     },
   };
 
-  console.log(`storing under ${BODY_KEY} (${fullText.length} chars) ...`);
-  await kvSet(BODY_KEY, fullText);
-  console.log(`storing metadata under ${META_KEY} ...`);
-  await kvSet(META_KEY, JSON.stringify(meta));
+  console.log(`persisting via ${BASE}/api/lore/twelfth-axis ...`);
+  await persist(fullText, meta, FORCE);
 
   console.log("\n=== SUCCESS ===");
   console.log(`hash:           ${hash}`);
   console.log(`locked_at:      ${lockedAt}`);
   console.log(`fragments:      ${fragments.length}`);
   console.log(`body bytes:     ${fullText.length}`);
-  console.log(`storage key:    ${BODY_KEY}`);
-  console.log(`metadata key:   ${META_KEY}`);
   console.log(`view at:        ${BASE}/the-twelfth-axis`);
   console.log(`json at:        ${BASE}/api/lore/twelfth-axis`);
   console.log("\nfirst 600 characters:\n");
