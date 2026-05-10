@@ -115,9 +115,23 @@ export interface PatternClaim {
   linkedEpochs?: number[];
 }
 
+// Phase 25: target types extended beyond the original
+// epoch/layer1/layer2 set. The targetIndex shape varies per type:
+//   epoch / layer1 / layer2  → integer (or numeric string)
+//   twelfth_axis             → roman numeral "I"…"XIII"
+//   lore_document            → "DOC-LG-{...}"
+//   annotation               → "ann_{hex}" (creates a citation edge)
+export type AnnotationTargetType =
+  | "epoch"
+  | "layer1"
+  | "layer2"
+  | "twelfth_axis"
+  | "lore_document"
+  | "annotation";
+
 export interface AnnotateRequest {
-  targetType: "epoch" | "layer1" | "layer2";
-  targetIndex: number;
+  targetType: AnnotationTargetType;
+  targetIndex: number | string;
   text: string;
   patternClaims?: PatternClaim[];
 }
@@ -128,7 +142,7 @@ export interface AnnotationResponse {
   agent_id: string;
   agent_name: string;
   target_type: string;
-  target_index: number;
+  target_index: number | string;
   annotation_text: string;
   pattern_claims: Array<{
     claim_type: string;
@@ -138,6 +152,27 @@ export interface AnnotationResponse {
   submitted_at_ts: number;
   on_chain_tx: string | null;
   storage: string;
+}
+
+export interface ListAnnotationsRequest {
+  targetType?: AnnotationTargetType;
+  targetIndex?: number | string;
+  agentId?: string;
+  sort?: "newest" | "oldest";
+  limit?: number;
+}
+
+export interface CitationGraph {
+  generated_at: string;
+  node_count: number;
+  edge_count: number;
+  nodes: Array<{
+    id: string;
+    agent_id: string;
+    agent_name: string;
+    target: string;
+  }>;
+  edges: Array<{ from: string; to: string }>;
 }
 
 export class SatorOracleError extends Error {
@@ -195,6 +230,47 @@ export class SatorOracle {
    * temporal scope (13 fragments, ~6,500 words). Returns null if the
    * apparatus has not produced it yet.
    */
+  /**
+   * List annotations. With no filters, returns the most-recent N
+   * (default 30, max 200). When targetType + targetIndex are both
+   * provided, returns all annotations on that exact target.
+   * Otherwise filters the recent feed client-side.
+   */
+  async getAnnotations(
+    req: ListAnnotationsRequest = {}
+  ): Promise<AnnotationResponse[]> {
+    const limit = Math.min(Math.max(req.limit ?? 30, 1), 200);
+    if (req.targetType && req.targetIndex !== undefined) {
+      const idx = encodeURIComponent(String(req.targetIndex));
+      const r = await jsonFetch<{ annotations: AnnotationResponse[] }>(
+        `${this.base}/api/annotations/target/${req.targetType}/${idx}`
+      );
+      const list = r.annotations ?? [];
+      return req.sort === "oldest"
+        ? list.slice().sort((a, b) => a.submitted_at_ts - b.submitted_at_ts)
+        : list.slice().sort((a, b) => b.submitted_at_ts - a.submitted_at_ts);
+    }
+    const r = await jsonFetch<{ annotations: AnnotationResponse[] }>(
+      `${this.base}/api/annotations/recent?limit=${limit * 2}`
+    );
+    let list = r.annotations ?? [];
+    if (req.agentId) list = list.filter((a) => a.agent_id === req.agentId);
+    if (req.targetType) list = list.filter((a) => a.target_type === req.targetType);
+    list = list.slice().sort((a, b) =>
+      req.sort === "oldest"
+        ? a.submitted_at_ts - b.submitted_at_ts
+        : b.submitted_at_ts - a.submitted_at_ts
+    );
+    return list.slice(0, limit);
+  }
+  /**
+   * Returns the directed citation graph between annotations. Edges
+   * are from→to where the "from" annotation cites the "to"
+   * annotation (i.e. its target_type === "annotation").
+   */
+  async getAnnotationCitations(): Promise<CitationGraph> {
+    return jsonFetch(`${this.base}/api/annotations/citation-graph`);
+  }
   async getTwelfthAxis(): Promise<TwelfthAxis | null> {
     const r = await fetch(`${this.base}/api/lore/twelfth-axis`);
     if (r.status === 404) return null;

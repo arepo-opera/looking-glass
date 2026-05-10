@@ -6,6 +6,7 @@ import {
   Caveat,
 } from "next/font/google";
 import "./globals.css";
+import { TopNavGate } from "@/components/TopNavGate";
 
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
@@ -61,7 +62,10 @@ export default function RootLayout({
       lang="en"
       className={`${jetbrains.variable} ${imFell.variable} ${specialElite.variable} ${caveat.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <TopNavGate />
+        {children}
+      </body>
     </html>
   );
 }

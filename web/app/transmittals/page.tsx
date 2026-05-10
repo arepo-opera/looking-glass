@@ -328,28 +328,6 @@ function TransmittalsBody() {
             end of transmittal correspondence in this archive.
           </p>
 
-          <p className="mt-12 italic font-serif m-0 whitespace-pre-wrap text-center">
-            <a
-              href="/"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ home ]
-            </a>
-            {"    "}
-            <a
-              href="/station-atlas"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ recovered documents ]
-            </a>
-            {"    "}
-            <a
-              href="/archive"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ on-chain archive ]
-            </a>
-          </p>
         </div>
       </article>
       <CRTOverlay enabled={effectsEnabled} forceFlicker={forceFlicker} />

@@ -269,28 +269,6 @@ function TwelfthAxisBody() {
             </>
           )}
 
-          <p className="mt-24 italic font-serif m-0 whitespace-pre-wrap text-center xl:max-w-[70ch] xl:mx-auto">
-            <a
-              href="/"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ home ]
-            </a>
-            {"    "}
-            <a
-              href="/archive"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ archive ]
-            </a>
-            {"    "}
-            <a
-              href="/methodology"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ methodology ]
-            </a>
-          </p>
         </div>
       </article>
       <CRTOverlay enabled={effectsEnabled} forceFlicker={forceFlicker} />

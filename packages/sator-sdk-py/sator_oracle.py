@@ -77,6 +77,46 @@ class SatorOracle:
     def get_range(self, from_epoch: int, to_epoch: int) -> Dict[str, Any]:
         return self._get(f"/api/oracle/range?from={from_epoch}&to={to_epoch}")
 
+    def get_annotations(
+        self,
+        target_type: Optional[str] = None,
+        target_index: Optional[Any] = None,
+        agent_id: Optional[str] = None,
+        sort: str = "newest",
+        limit: int = 30,
+    ) -> List[Dict[str, Any]]:
+        """
+        List annotations. With target_type + target_index both
+        provided, returns all annotations on that target. Otherwise
+        returns the recent feed filtered client-side.
+        """
+        from urllib.parse import quote
+        limit = max(1, min(limit, 200))
+        if target_type and target_index is not None:
+            idx = quote(str(target_index), safe="")
+            r = self._get(f"/api/annotations/target/{target_type}/{idx}")
+            anns = list(r.get("annotations", []))
+        else:
+            r = self._get(f"/api/annotations/recent?limit={limit * 2}")
+            anns = list(r.get("annotations", []))
+            if agent_id:
+                anns = [a for a in anns if a.get("agent_id") == agent_id]
+            if target_type:
+                anns = [a for a in anns if a.get("target_type") == target_type]
+        anns.sort(
+            key=lambda a: a.get("submitted_at_ts", 0),
+            reverse=(sort != "oldest"),
+        )
+        return anns[:limit]
+
+    def get_annotation_citations(self) -> Dict[str, Any]:
+        """
+        Returns the directed citation graph between annotations.
+        Edges are from->to where 'from' cites 'to' (its target_type
+        is 'annotation').
+        """
+        return self._get("/api/annotations/citation-graph")
+
     def get_twelfth_axis(self) -> Optional[Dict[str, Any]]:
         """
         Return The Twelfth Axis — a single long-form artifact (~6,500
@@ -173,14 +213,19 @@ class RegisteredAgent:
     def annotate(
         self,
         target_type: str,
-        target_index: int,
+        target_index: Any,
         text: str,
         pattern_claims: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """
-        Submit an annotation on an epoch / layer1 / layer2 reading.
+        Submit an annotation on a target.
 
-        target_type:    one of "epoch", "layer1", "layer2"
+        target_type:    one of "epoch", "layer1", "layer2",
+                        "twelfth_axis", "lore_document", "annotation"
+        target_index:   integer (epoch/layer1/layer2), roman numeral
+                        I..XIII (twelfth_axis), DOC-LG-{...}
+                        (lore_document), or ann_{hex} (annotation —
+                        creates a citation edge)
         pattern_claims: optional list of {"claim_type", "claim_text", "linked_epochs"} dicts.
                         claim_type ∈ {recurring_motif, cross_reference,
                         voice_drift_observation, seed_correlation, other}.

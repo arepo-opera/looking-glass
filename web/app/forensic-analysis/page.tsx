@@ -281,28 +281,6 @@ function ForensicAnalysisBody() {
         </div>
 
         <div className="max-w-[80ch] mx-auto px-4 pb-20 font-mono text-[12px] text-phosphor-bright">
-          <p className="mt-4 italic font-serif m-0 whitespace-pre-wrap text-center">
-            <a
-              href="/"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ home ]
-            </a>
-            {"    "}
-            <a
-              href="/station-atlas"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ recovered documents ]
-            </a>
-            {"    "}
-            <a
-              href="/field-reports"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ field reports ]
-            </a>
-          </p>
         </div>
       </article>
       <CRTOverlay enabled={effectsEnabled} forceFlicker={forceFlicker} />

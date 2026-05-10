@@ -9,7 +9,14 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const VALID_TYPES = new Set(["epoch", "layer1", "layer2"]);
+const VALID_TYPES = new Set([
+  "epoch",
+  "layer1",
+  "layer2",
+  "twelfth_axis",
+  "lore_document",
+  "annotation",
+]);
 
 export async function GET(
   _req: NextRequest,
@@ -21,20 +28,20 @@ export async function GET(
   const { type, index } = params;
   if (!VALID_TYPES.has(type)) {
     return NextResponse.json(
-      { error: "type must be one of: epoch, layer1, layer2" },
+      {
+        error:
+          "type must be one of: epoch, layer1, layer2, twelfth_axis, lore_document, annotation",
+      },
       { status: 400 }
     );
   }
-  const idxNum = Number(index);
-  if (!Number.isFinite(idxNum) || idxNum < 0) {
-    return NextResponse.json(
-      { error: "index must be a non-negative integer" },
-      { status: 400 }
-    );
-  }
-  // Authoritative SET-based index: O(1) read, no SCAN.
+  // Index is now a string for non-numeric types. The submit endpoint
+  // already normalises (epoch → "750", twelfth_axis → "XII",
+  // lore_document → "DOC-LG-1971-FR-3", annotation → "ann_xxx") so
+  // the SET key match works directly.
+  const decodedIndex = decodeURIComponent(index);
   const ids = await kvSmembers(
-    `annotation:target_set:${type}:${idxNum}`
+    `annotation:target_set:${type}:${decodedIndex}`
   );
   const docKeys = ids.map((id) => `annotation:${id}`);
   const docRaws = await kvMget(docKeys);
@@ -53,7 +60,7 @@ export async function GET(
   return NextResponse.json(
     {
       target_type: type,
-      target_index: idxNum,
+      target_index: decodedIndex,
       count: out.length,
       annotations: out,
     },

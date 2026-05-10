@@ -233,35 +233,6 @@ function SkepticismBody() {
           </div>{/* /column 2 */}
           </div>{/* /grid */}
 
-          <p className="mt-[6em] italic font-serif m-0 whitespace-pre-wrap xl:max-w-[72ch] xl:mx-auto">
-            <a
-              href="/"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ home ]
-            </a>
-            {"    "}
-            <a
-              href="/methodology"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ methodology ]
-            </a>
-            {"    "}
-            <a
-              href="/archive"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ archive ]
-            </a>
-            {"    "}
-            <a
-              href="/patterns"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ patterns ]
-            </a>
-          </p>
         </div>
       </article>
       <CRTOverlay enabled={effectsEnabled} forceFlicker={forceFlicker} />

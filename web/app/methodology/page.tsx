@@ -234,35 +234,6 @@ function MethodologyBody() {
 
           </div>{/* /xl-centered body */}
 
-          <p className="mt-[6em] italic font-serif m-0 whitespace-pre-wrap xl:max-w-[72ch] xl:mx-auto">
-            <a
-              href="/"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ home ]
-            </a>
-            {"    "}
-            <a
-              href="/archive"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ archive ]
-            </a>
-            {"    "}
-            <a
-              href="/patterns"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ patterns ]
-            </a>
-            {"    "}
-            <a
-              href="/skepticism"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ skepticism ]
-            </a>
-          </p>
         </div>
       </article>
       <CRTOverlay enabled={effectsEnabled} forceFlicker={forceFlicker} />

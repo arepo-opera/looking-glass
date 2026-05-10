@@ -2,7 +2,56 @@ import { NextRequest, NextResponse } from "next/server";
 import { keccak_256 } from "js-sha3";
 import { kvConfigured, kvErrorResponse, kvGet, kvSadd, kvSet } from "@/lib/kv-helpers";
 
-const VALID_TARGETS = new Set(["epoch", "layer1", "layer2"]);
+// Phase 25: extended target types beyond the original epoch/layer1/
+// layer2 set. Each kind has its own target_index validator below.
+const VALID_TARGETS = new Set([
+  "epoch",
+  "layer1",
+  "layer2",
+  "twelfth_axis",
+  "lore_document",
+  "annotation",
+]);
+
+const ROMAN_RE = /^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII)$/;
+const DOC_ID_RE = /^DOC-LG-[A-Z0-9-]+$/;
+const ANN_ID_RE = /^ann_[0-9a-f]{8,}$/;
+
+/**
+ * Normalises target_index to a string and validates per target_type.
+ * Returns the normalised string or null if invalid.
+ *
+ * - epoch / layer1 / layer2: must be a non-negative integer; stored
+ *   as decimal string so KV keys match the existing scheme.
+ * - twelfth_axis: must be a roman numeral I..XIII (the axis position).
+ * - lore_document: must match DOC-LG-{...} pattern.
+ * - annotation: must match ann_{hex}.
+ */
+function normaliseTargetIndex(
+  targetType: string,
+  raw: unknown
+): string | null {
+  if (raw === null || raw === undefined) return null;
+  const s = String(raw).trim();
+  if (s.length === 0) return null;
+  switch (targetType) {
+    case "epoch":
+    case "layer1":
+    case "layer2": {
+      const n = Number(s);
+      if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) return null;
+      return String(n);
+    }
+    case "twelfth_axis":
+      return ROMAN_RE.test(s) ? s : null;
+    case "lore_document":
+      return DOC_ID_RE.test(s) ? s : null;
+    case "annotation":
+      return ANN_ID_RE.test(s) ? s : null;
+    default:
+      return null;
+  }
+}
 const VALID_CLAIM_TYPES = new Set([
   "recurring_motif",
   "cross_reference",
@@ -50,14 +99,20 @@ export async function POST(req: NextRequest) {
   const targetType: string = (body.target_type ?? "").trim();
   if (!VALID_TARGETS.has(targetType)) {
     return NextResponse.json(
-      { error: "target_type must be one of: epoch, layer1, layer2" },
+      {
+        error:
+          "target_type must be one of: epoch, layer1, layer2, twelfth_axis, lore_document, annotation",
+      },
       { status: 400 }
     );
   }
-  const targetIndex = Number(body.target_index);
-  if (!Number.isFinite(targetIndex) || targetIndex < 0) {
+  const targetIndex = normaliseTargetIndex(targetType, body.target_index);
+  if (targetIndex === null) {
     return NextResponse.json(
-      { error: "target_index must be a non-negative integer" },
+      {
+        error:
+          "target_index invalid for target_type. epoch/layer1/layer2: integer; twelfth_axis: roman I-XIII; lore_document: DOC-LG-...; annotation: ann_...",
+      },
       { status: 400 }
     );
   }
@@ -158,6 +213,12 @@ export async function POST(req: NextRequest) {
   );
   await kvSadd(`annotation:agent_set:${agentId}`, annotationId);
   await kvSadd(`annotation:all_set`, annotationId);
+  // Phase 25: when this annotation cites another (target_type ===
+  // "annotation"), also record the reverse edge so the cited
+  // annotation's page can show its citers in O(1) without scanning.
+  if (targetType === "annotation") {
+    await kvSadd(`annotation:cited_by_set:${targetIndex}`, annotationId);
+  }
   // Legacy timestamped keys preserved for the recent-feed (lex-sorted
   // by ts via SCAN). Recent feed handles small bounded scans fine.
   await kvSet(`annotation:recent:${ts}:${annotationId}`, annotationId);

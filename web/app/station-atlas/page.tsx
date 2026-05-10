@@ -485,28 +485,6 @@ function StationAtlasBody() {
             end of recovered material in this archive.
           </p>
 
-          <p className="mt-12 italic font-serif m-0 whitespace-pre-wrap text-center">
-            <a
-              href="/"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ home ]
-            </a>
-            {"    "}
-            <a
-              href="/transmittals"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ transmittal archive ]
-            </a>
-            {"    "}
-            <a
-              href="/archive"
-              className="no-underline hover:underline text-phosphor-bright"
-            >
-              [ on-chain archive ]
-            </a>
-          </p>
         </div>
       </article>
       <CRTOverlay enabled={effectsEnabled} forceFlicker={forceFlicker} />
