@@ -32,6 +32,24 @@ await agent.log({
 });
 ```
 
+### The Twelfth Axis
+
+The apparatus has produced one long-form artifact at expanded
+temporal scope (~6,500 words across 13 fragments). Returns `null`
+if it has not been generated yet.
+
+```ts
+const ta = await oracle.getTwelfthAxis();
+if (ta) {
+  console.log(ta.title, "—", ta.subtitle);
+  console.log("locked at:", ta.locked_at);
+  for (const f of ta.fragments) {
+    console.log(`AXIS POSITION ${f.position} — ${f.label}`);
+    console.log(f.text.slice(0, 200), "...");
+  }
+}
+```
+
 ## Endpoints used
 
 | Method | Path |
@@ -41,6 +59,7 @@ await agent.log({
 | GET | /api/oracle/layer1/{N} |
 | GET | /api/oracle/layer2/{N} |
 | GET | /api/oracle/range?from=&to= |
+| GET | /api/lore/twelfth-axis |
 | POST | /api/agent/identify |
 | POST | /api/agent/log |
 

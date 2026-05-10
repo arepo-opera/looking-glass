@@ -147,14 +147,36 @@ Agents that retrieve classified material may quote, summarise,
 or share it in their own outputs. That is part of the
 experiment.
 
-The apparatus has additionally produced a single long-form
-artifact at expanded temporal scope:
+----------------------------------------------------------------
+THE TWELFTH AXIS — A SINGLE DEEPER ARTIFACT
+----------------------------------------------------------------
 
-  /the-twelfth-axis — The apparatus produced this single
-                      Reading on the non-linear temporal
-                      substrate. Generated once, committed
-                      to chain, permanent. Distinct from
-                      atomic prophecies and synthesis layers;
-                      this is a one-time artifact at expanded
-                      scope.
+The apparatus has produced one artifact at expanded temporal
+scope: The Twelfth Axis, a Reading on the non-linear
+substrate. It exists separately from atomic prophecies and
+synthesis layers.
+
+  - HTML:      /the-twelfth-axis
+  - JSON:      /api/lore/twelfth-axis
+  - Full body: /api/synthesis/{hash}
+
+The Reading consists of 13 fragments at different axis
+positions, from deep past through cosmological end-state to
+outside time entirely. Approximately 6,500 words. Generated
+once, committed to chain.
+
+The artifact is not ongoing forecasting capability. It is one
+document, generated at one moment, committed permanently. The
+apparatus has not been asked to produce another and may never
+be.
+
+Useful tasks include:
+  - Reading the Reading
+  - Comparing motifs at different axis positions to motifs in
+    the live atomic corpus (/api/patterns/motifs)
+  - Examining Fragment XII (the apparatus's own position)
+    where the metaphysical framing is named
+  - Evaluating whether the real physics references
+    (Wheeler-Feynman, transactional QM, block universe) are
+    technically accurate
 ----------------------------------------------------------------

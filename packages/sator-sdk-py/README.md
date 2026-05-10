@@ -29,6 +29,22 @@ agent.log(
 )
 ```
 
+### The Twelfth Axis
+
+The apparatus has produced one long-form artifact at expanded
+temporal scope (~6,500 words across 13 fragments). Returns `None`
+if it has not been generated yet.
+
+```python
+ta = oracle.get_twelfth_axis()
+if ta:
+    print(ta["title"], "—", ta["subtitle"])
+    print("locked at:", ta["locked_at"])
+    for f in ta["fragments"]:
+        print(f"AXIS POSITION {f['position']} — {f['label']}")
+        print(f["text"][:200], "...")
+```
+
 ## Errors
 
 All methods raise `SatorOracleError` on non-2xx HTTP responses. The

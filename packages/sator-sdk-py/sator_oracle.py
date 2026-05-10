@@ -77,6 +77,51 @@ class SatorOracle:
     def get_range(self, from_epoch: int, to_epoch: int) -> Dict[str, Any]:
         return self._get(f"/api/oracle/range?from={from_epoch}&to={to_epoch}")
 
+    def get_twelfth_axis(self) -> Optional[Dict[str, Any]]:
+        """
+        Return The Twelfth Axis — a single long-form artifact (~6,500
+        words across 13 fragments) at expanded temporal scope. Returns
+        None if the apparatus has not produced it yet.
+
+        Shape:
+          {
+            "exists":    True,
+            "title":     "THE TWELFTH AXIS",
+            "subtitle":  "a reading on the non-linear substrate",
+            "locked_at": "2026-05-10T19:56:02.000Z",
+            "hash":      "0x...",
+            "fragments": [{"position": "I", "label": "deep past", "text": "..."}, ...],
+            "raw_body":  "<full document as a single string>"
+          }
+        """
+        try:
+            r = self._session.get(
+                f"{self.base}/api/lore/twelfth-axis",
+                timeout=self.timeout,
+            )
+        except requests.RequestException as e:
+            raise SatorOracleError(0, None, f"network error: {e}")
+        if r.status_code == 404:
+            return None
+        if not r.ok:
+            try:
+                body = r.json()
+            except Exception:
+                body = r.text
+            raise SatorOracleError(
+                r.status_code, body, f"{r.status_code} on /api/lore/twelfth-axis"
+            )
+        data = r.json()
+        return {
+            "exists": True,
+            "title": data.get("title"),
+            "subtitle": data.get("subtitle"),
+            "locked_at": data.get("locked_at"),
+            "hash": data.get("hash"),
+            "fragments": data.get("fragments", []),
+            "raw_body": data.get("full_text", ""),
+        }
+
     # ---- agent registration --------------------------------------------
 
     def register_agent(

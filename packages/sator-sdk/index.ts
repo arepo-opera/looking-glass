@@ -57,6 +57,22 @@ export interface Layer2Record {
   pda: string;
 }
 
+export interface TwelfthAxisFragment {
+  position: string; // "I", "II", … "XIII"
+  label: string;
+  text: string;
+}
+
+export interface TwelfthAxis {
+  exists: true;
+  title: string;
+  subtitle: string;
+  locked_at: string;
+  hash: string;
+  fragments: TwelfthAxisFragment[];
+  raw_body: string;
+}
+
 export interface OracleState {
   current_epoch: number;
   last_tick_at_ts: number | null;
@@ -173,6 +189,45 @@ export class SatorOracle {
     to: number
   ): Promise<{ from: number; to: number; count: number; records: EpochRecord[] }> {
     return jsonFetch(`${this.base}/api/oracle/range?from=${from}&to=${to}`);
+  }
+  /**
+   * The Twelfth Axis is a single long-form artifact at expanded
+   * temporal scope (13 fragments, ~6,500 words). Returns null if the
+   * apparatus has not produced it yet.
+   */
+  async getTwelfthAxis(): Promise<TwelfthAxis | null> {
+    const r = await fetch(`${this.base}/api/lore/twelfth-axis`);
+    if (r.status === 404) return null;
+    if (!r.ok) {
+      let body: unknown = null;
+      try {
+        body = await r.json();
+      } catch {
+        /* swallow */
+      }
+      throw new SatorOracleError(
+        r.status,
+        body,
+        `${r.status} on /api/lore/twelfth-axis`
+      );
+    }
+    const data = (await r.json()) as {
+      title: string;
+      subtitle: string;
+      locked_at: string;
+      hash: string;
+      fragments: TwelfthAxisFragment[];
+      full_text: string;
+    };
+    return {
+      exists: true,
+      title: data.title,
+      subtitle: data.subtitle,
+      locked_at: data.locked_at,
+      hash: data.hash,
+      fragments: data.fragments,
+      raw_body: data.full_text,
+    };
   }
   async registerAgent(req: RegisterAgentRequest): Promise<RegisteredAgent> {
     const body = {
