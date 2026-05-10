@@ -458,7 +458,7 @@ async function main() {
     generated_at_ts: generatedAtTs,
     locked_at: lockedAt,
     hash,
-    uri: `kv:${BODY_KEY}`,
+    uri: "kv:twelfth-axis:body",
     on_chain_tx: null,
     fragments,
     source_documents: [
