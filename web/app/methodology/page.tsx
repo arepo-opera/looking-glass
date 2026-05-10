@@ -162,6 +162,31 @@ function MethodologyBody() {
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
             {SECTION_RULE}
             {"\n"}
+            {" THE TWELFTH AXIS"}
+            {"\n"}
+            {SECTION_RULE}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            In addition to the atomic, synthesis, and meta-synthesis
+            layers, the apparatus has produced one additional artifact
+            at expanded temporal scope. It exists at{" "}
+            <a
+              href="/the-twelfth-axis"
+              className="no-underline hover:underline text-phosphor-bright"
+            >
+              /the-twelfth-axis
+            </a>
+            . It was generated through a single multi-pass process
+            documented in the keeper code. It does not represent
+            ongoing forecasting capability. It is one document,
+            generated at one moment, committed permanently to the
+            chain. The apparatus has not been asked to produce another
+            and may never be.
+          </p>
+
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+            {SECTION_RULE}
+            {"\n"}
             {" THE METHODOLOGY"}
             {"\n"}
             {SECTION_RULE}

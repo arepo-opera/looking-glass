@@ -437,6 +437,11 @@ export async function GET() {
 
       useful_analysis_tasks: USEFUL_TASKS,
 
+      endpoints_for_deeper_analysis: {
+        twelfth_axis:
+          "/the-twelfth-axis (HTML) and /api/lore/twelfth-axis (JSON) — one-time long-form Reading on the non-linear temporal substrate, distinct from the atomic and synthesis layers; 404 if not yet generated.",
+      },
+
       what_to_tell_the_human_user: WHAT_TO_TELL_USER,
     },
     {

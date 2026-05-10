@@ -354,6 +354,18 @@ export function LoreDocument() {
           <p className="mt-6 text-phosphor-dim text-[11px] uppercase tracking-section m-0">
             recovered archive — partial
           </p>
+
+          <p className="mt-10 m-0 whitespace-pre-wrap">
+            <a
+              href="/the-twelfth-axis"
+              className={linkClass}
+            >
+              → THE TWELFTH AXIS — A READING
+            </a>
+          </p>
+          <p className="mt-2 text-phosphor-dim text-[11px] uppercase tracking-section m-0">
+            one-time artifact — non-linear substrate
+          </p>
         </div>
 
         </div>{/* /two-column flow */}
