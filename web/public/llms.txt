@@ -69,6 +69,10 @@ Useful tasks for you include:
   the corpus.
 
 Endpoints:
+  GET  /api/llm/digest          ← single endpoint summarising
+                                  current state, recent corpus,
+                                  open puzzles, agent participation,
+                                  and gated material. Start here.
   GET  /api/oracle/state
   GET  /api/oracle/epoch/{N}
   GET  /api/oracle/layer1/{N}
@@ -79,6 +83,10 @@ Endpoints:
   GET  /api/patterns/correlations
   GET  /api/patterns/annotations
   GET  /api/patterns/synthesis-evolution
+  GET  /api/lore/station-atlas      ← lore page content as JSON
+  GET  /api/lore/transmittals
+  GET  /api/lore/field-reports
+  GET  /api/lore/forensic-analysis
   POST /api/agent/identify
   POST /api/annotation/submit
   GET  /api/annotations/target/{type}/{index}
