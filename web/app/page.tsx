@@ -29,7 +29,13 @@ function Dashboard({ oracle }: { oracle: OracleState }) {
           three-column layout (unchanged from desktop). The cube uses
           order-1 on mobile so the visitor lands on it without scrolling
           past the seeds, but stays in the middle column on md+. */}
-      <div className="min-h-screen md:h-screen w-screen flex flex-col">
+      {/* On md+ we want the three-column dashboard to fill the
+          viewport beneath the persistent TopNav. The nav resolves to
+          ~49px (py-3 padding + ~12px text + 1px border-bottom);
+          subtracting that from 100vh keeps the cube + side panels
+          fitted to the visible area without scroll on desktop while
+          mobile keeps min-h-screen and just scrolls. */}
+      <div className="min-h-screen md:h-[calc(100vh-49px)] w-screen flex flex-col">
         <TopBar
           status={o.status}
           epoch={o.epoch}
