@@ -92,18 +92,19 @@ function FieldReportsBody() {
           <pre className="whitespace-pre m-0 leading-[1.6]">
             {RULE}
             {"\n"}
-            {"SUBJECT       : FIELD REPORTS — OPERATIONAL"}
+            {"SUBJECT       : FIELD REPORTS — TRANSCRIBED OPERATIONAL RECORDS"}
             {"\n"}
-            {"CLASSIFICATION: PERSONNEL ASSIGNMENTS / DECLASSIFIED FRAGMENTS"}
+            {"CLASSIFICATION: PUBLIC // TRANSCRIPTION OF RECEIVED MATERIALS"}
             {"\n"}
             {RULE}
           </pre>
 
           <p className="mt-8 italic font-serif text-phosphor-dim m-0">
-            Operational field reports filed by program personnel during the
-            apparatus&apos;s active operational period (1962—2012). Reports
-            were filed at the discretion of individual operators; the
-            corpus is not exhaustive. Status codes are as recorded.
+            operational records transcribed from materials received by
+            the architect. dates span 1962—2009. the apparatus has been
+            instructed to make these visible. some records remain held
+            and may surface in time. the architect has not been
+            instructed to explain the reporting structure they reflect.
           </p>
         </div>
 

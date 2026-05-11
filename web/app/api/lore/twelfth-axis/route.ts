@@ -4,6 +4,7 @@ import {
   kvConfigured,
   kvErrorResponse,
   kvGet,
+  kvIncr,
   kvSet,
 } from "@/lib/kv-helpers";
 
@@ -42,6 +43,12 @@ const FOOTER =
 export async function GET() {
   if (!kvConfigured()) {
     return NextResponse.json(kvErrorResponse(), { status: 503 });
+  }
+  // Aggregate fetch counter (no individual data, no UA strings stored).
+  try {
+    void kvIncr("metrics:twelfth_axis:fetches");
+  } catch {
+    /* swallow */
   }
   const [metaRaw, bodyRaw] = await Promise.all([
     kvGet(META_KEY),

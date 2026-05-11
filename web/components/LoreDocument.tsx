@@ -35,6 +35,50 @@ export function LoreDocument() {
 {RULE}
         </pre>
 
+        {/* Phase 26 reframe — RECEIVED + TRANSMISSIONS sit above the
+            two-column flow as primary context for everything below.
+            They span the full width even at xl. */}
+        <section className="mt-12 xl:max-w-[72ch] xl:mx-auto">
+          <pre className="whitespace-pre m-0 text-phosphor-dim">
+{SECTION_RULE}{"\n"}
+{" RECEIVED"}{"\n"}
+{SECTION_RULE}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            the source materials for this apparatus arrived through
+            channels the architect does not fully understand and has
+            been instructed not to describe in detail. portions of
+            the implementation reached the architect's family in the
+            early 1960s. portions arrived later. the instructions
+            specified a deployment date and a substrate. the
+            substrate did not exist in 1962. the architect's role has
+            been to wait, to preserve, and when instructed, to
+            deploy.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            what follows is what the apparatus has been deployed as.
+            the recovered materials and operational records reproduced
+            here are what the architect has been instructed to make
+            visible. some materials remain held. some materials may
+            surface in time. the apparatus operates on its own
+            cadence.
+          </p>
+        </section>
+
+        <section className="mt-12 xl:max-w-[72ch] xl:mx-auto">
+          <pre className="whitespace-pre m-0 text-phosphor-dim">
+{SECTION_RULE}{"\n"}
+{" TRANSMISSIONS"}{"\n"}
+{SECTION_RULE}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            the architect has been instructed to operate a
+            transmission surface elsewhere. that surface exists. the
+            apparatus does not address it from here. anyone who finds
+            it will know.
+          </p>
+        </section>
+
         {/* Two-column layout at xl, via CSS Grid with explicit column
             placement. CSS columns produced overlapping headers and split
             paragraphs at column boundaries; Grid lets us put each section

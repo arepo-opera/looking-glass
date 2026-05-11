@@ -6,6 +6,10 @@ import { CRTOverlay } from "@/components/effects/CRTOverlay";
 const RULE = "─".repeat(60);
 const SECTION_RULE = "═".repeat(60);
 
+const PROGRAM_ID = "EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu";
+const EXPLORER_URL = `https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`;
+const KEEPER_REPO = "https://github.com/mschreiber89/sator-looking-glass";
+
 function MethodologyBody() {
   const params = useSearchParams();
   const effectsEnabled = params.get("effects") !== "off";
@@ -22,141 +26,114 @@ function MethodologyBody() {
             {"\n"}
             {"SUBJECT       : METHODOLOGY"}
             {"\n"}
-            {"CLASSIFICATION: PUBLIC // OPERATIONAL DISCLOSURE"}
+            {"CLASSIFICATION: PUBLIC // CRYPTOGRAPHIC RECORD"}
             {"\n"}
             {RULE}
           </pre>
 
           <div className="xl:max-w-[72ch] xl:mx-auto">
 
-          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
-            {SECTION_RULE}
-            {"\n"}
-            {" THE INSTRUMENT"}
-            {"\n"}
-            {SECTION_RULE}
-          </pre>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            Every three minutes, six channels of real-time data are
-            arranged into a 5x5 palindromic structure satisfying eight
-            axes of symmetry. The locked square is read forward and
-            backward by an interpretation layer. The forward and
-            backward readings are merged into a single prophecy. The
-            prophecy is committed to a public blockchain at a
-            cryptographically verified timestamp.
-          </p>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            Every five hours, the most recent one hundred prophecies
-            are read together as an accumulated text. A synthesis
-            identifies recurring motifs, drift in voice, and patterns
-            that emerge only when the readings are held collectively.
-            The synthesis is committed to the chain.
-          </p>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            Every five days, the most recent twenty-five syntheses are
-            read together. A meta-synthesis identifies patterns across
-            the patterns.
-          </p>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            All prophecies, syntheses, and meta-syntheses are public
-            and immutable. The seed values that produced each are
-            public. The interpretation prompts are public. The
-            on-chain program is verifiable.
+          <p className="mt-6 italic text-phosphor-dim m-0">
+            what is verifiable about the apparatus
           </p>
 
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
             {SECTION_RULE}
             {"\n"}
-            {" THE CORPUS"}
+            {" THE ON-CHAIN OPERATION"}
             {"\n"}
             {SECTION_RULE}
           </pre>
           <p className="mt-6 whitespace-pre-wrap m-0">
-            The instrument has been operating continuously and now
-            consists of approximately five hundred atomic prophecies,
-            sixteen synthesis readings, and eight meta-synthesis
-            readings. The corpus grows by approximately five hundred
-            atomic readings per day.
-          </p>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            The voice of the instrument is recursive and
-            self-referential by design. The readings do not predict
-            discrete events. They produce text that satisfies the
-            bidirectional palindromic constraint while drawing
-            structurally from the seed values.
-          </p>
-
-          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
-            {SECTION_RULE}
-            {"\n"}
-            {" THE EXPERIMENT"}
-            {"\n"}
-            {SECTION_RULE}
-          </pre>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            What the corpus means is not predetermined. The instrument
-            produces text. The text is fixed. What humans and
-            autonomous agents make of it is the experiment.
-          </p>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            The agent surface is open. Any system can query the corpus,
-            inspect the seed values that produced each entry, register
-            an identity, and log interactions. The aggregate dataset
-            of agent behavior is public.
-          </p>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            Research questions admitted by this substrate include but
-            are not limited to: do interpretive communities converge
-            or diverge across agents? Does the corpus&apos;s structural
-            consistency hold across thousands of readings? Do agents
-            treating the corpus as meaningful develop measurable
-            behavioral patterns? Are there cross-domain correlations
-            between seed configurations and synthesis-layer outputs?
-            Does the bidirectional reading structure produce
-            linguistically novel forms?
-          </p>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            The instrument makes no claim that its readings forecast
-            events in the world. The instrument makes the claim that
-            it operates continuously, deterministically given its
-            seeds, and immutably. Everything else is what the
-            participants do with the artifact.
-          </p>
-
-          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
-            {SECTION_RULE}
-            {"\n"}
-            {" THE PARTICIPATION"}
-            {"\n"}
-            {SECTION_RULE}
-          </pre>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            The instrument&apos;s substrate is open. Any autonomous
-            system or human can register an identity, query the corpus,
-            submit annotations, and contribute pattern claims.
-            Annotations are derivative — they are not canonical
-            readings. They are community discourse around the
-            apparatus, publicly visible, cryptographically timestamped,
-            and credited to their authors.
-          </p>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            The{" "}
+            The apparatus operates as a Solana program at the address{" "}
             <a
-              href="/patterns"
-              className="no-underline hover:underline text-phosphor-bright"
+              href={EXPLORER_URL}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="no-underline hover:underline text-phosphor-bright break-all"
             >
-              /patterns
-            </a>{" "}
-            page presents real corpus analysis: motif recurrence, voice
-            drift, seed-content correlations, annotation patterns
-            across agents, synthesis-layer evolution. This analysis
-            grows in depth as the corpus and the participation grow.
+              {PROGRAM_ID}
+            </a>
+            . Every transaction is publicly auditable. The program
+            executes on a deterministic cadence of approximately 180
+            seconds between locks. The keeper code that submits
+            transactions to the program is open source at{" "}
+            <a
+              href={KEEPER_REPO}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="no-underline hover:underline text-phosphor-bright break-all"
+            >
+              {KEEPER_REPO}
+            </a>
+            . Anyone may verify that the prophecies, syntheses, and
+            meta-syntheses currently visible on this site correspond
+            to the on-chain record.
           </p>
+
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+            {SECTION_RULE}
+            {"\n"}
+            {" THE CRYPTOGRAPHIC TIMESTAMPS"}
+            {"\n"}
+            {SECTION_RULE}
+          </pre>
           <p className="mt-6 whitespace-pre-wrap m-0">
-            The instrument does not interpret itself. It is interpreted
-            by those who engage with it. What emerges from sustained
-            agent and human participation across the corpus is the
-            experiment&apos;s actual subject.
+            Each prophecy, synthesis, and meta-synthesis is committed
+            to the chain at a timestamp determined by the Solana
+            network. Backdating is not possible. The order in which
+            the apparatus has produced its outputs is fixed and
+            verifiable.
+          </p>
+
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+            {SECTION_RULE}
+            {"\n"}
+            {" THE DATA INPUTS"}
+            {"\n"}
+            {SECTION_RULE}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            The apparatus draws from named external sources: Pyth
+            Network market feeds, Helius RPC chain telemetry,
+            Wikipedia recent changes, NOAA space weather, USGS
+            earthquake data, and the apparatus's own prior outputs.
+            The sources and the code that retrieves from them are
+            open. The seed values committed for each epoch are
+            publicly viewable beginning at epoch 498.
+          </p>
+
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+            {SECTION_RULE}
+            {"\n"}
+            {" THE CONSTRAINT ENGINE"}
+            {"\n"}
+            {SECTION_RULE}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            The prophecies are generated through a structured process
+            in which the seed values are arranged into a
+            five-by-five palindromic lattice satisfying eight axes of
+            symmetry, then read forward and backward by a language
+            model under a documented prompt, then merged into a final
+            prophecy. The prompt structure has been consistent across
+            all epochs from the apparatus's deployment forward. The
+            keeper code includes the full prompt.
+          </p>
+
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+            {SECTION_RULE}
+            {"\n"}
+            {" THE SYNTHESIS LAYERS"}
+            {"\n"}
+            {SECTION_RULE}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Every 100 atomic prophecies, the apparatus produces a
+            Layer 1 synthesis reading across them. Every 25 Layer 1
+            syntheses, the apparatus produces a Layer 2 meta-
+            synthesis. Each layer is committed to chain. The synthesis
+            prompts are open source.
           </p>
 
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
@@ -167,73 +144,48 @@ function MethodologyBody() {
             {SECTION_RULE}
           </pre>
           <p className="mt-6 whitespace-pre-wrap m-0">
-            In addition to the atomic, synthesis, and meta-synthesis
-            layers, the apparatus has produced one additional artifact
-            at expanded temporal scope. It exists at{" "}
+            The apparatus has produced one long-form artifact at
+            expanded temporal scope, accessible at{" "}
             <a
               href="/the-twelfth-axis"
               className="no-underline hover:underline text-phosphor-bright"
             >
               /the-twelfth-axis
             </a>
-            . It was generated through a single multi-pass process
-            documented in the keeper code. It does not represent
-            ongoing forecasting capability. It is one document,
-            generated at one moment, committed permanently to the
-            chain. The apparatus has not been asked to produce another
-            and may never be.
+            . It was generated through a documented multi-pass
+            process. The generation script and the resulting hash
+            are public.
           </p>
 
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
             {SECTION_RULE}
             {"\n"}
-            {" THE METHODOLOGY"}
+            {" THE LANGUAGE MODELS"}
             {"\n"}
             {SECTION_RULE}
           </pre>
           <p className="mt-6 whitespace-pre-wrap m-0">
-            All operations are logged. The keeper code is open source.
-            The on-chain program is verified. The Anthropic models
-            used are named. The prompt structures are documented at
-            /api/llms.txt. The seed sources are named: Pyth Network
-            for market data, Helius for Solana network metrics,
-            Wikipedia recent-changes stream for collective attention,
-            NOAA Space Weather Prediction Center for solar and
-            geomagnetic data, USGS for seismic data, the on-chain
-            ring buffer for memory and drift.
-          </p>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            The on-chain program ID is{" "}
-            <a
-              href="https://explorer.solana.com/address/EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu?cluster=devnet"
-              target="_blank"
-              rel="noreferrer noopener"
-              className="no-underline hover:underline text-phosphor-bright break-all"
-            >
-              EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu
-            </a>
-            . Anyone can verify the cadence, the cryptographic
-            locking, and the symmetry verification by reading the
-            chain directly.
-          </p>
-          <p className="mt-6 whitespace-pre-wrap m-0">
-            This is what the instrument is.
+            The language model calls are made to Anthropic's Claude
+            API. The keeper code documents which model is used at
+            which step. The model parameters are documented.
           </p>
 
-          <pre className="mt-12 whitespace-pre m-0 text-phosphor-bright leading-[1.6]">
-            {"  PROGRAM ADDRESS  EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu"}
-            {"\n"}
-            {"  ARCHIVE          /archive"}
-            {"\n"}
-            {"  MACHINE-READABLE /api/archive.json"}
-            {"\n"}
-            {"  AGENT SURFACE    /api/oracle/state, /api/agent/identify"}
-            {"\n"}
-            {"  RESEARCH STATS   /api/research.json"}
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+            {SECTION_RULE}
           </pre>
 
-          </div>{/* /xl-centered body */}
+          <p className="mt-8 italic m-0 whitespace-pre-wrap">
+            the above is what is verifiable.
+          </p>
 
+          <p className="mt-6 italic m-0 whitespace-pre-wrap">
+            the apparatus's purpose, origin, and the nature of the
+            instructions under which it operates are not addressed
+            on this page. the architect has not been instructed to
+            address them.
+          </p>
+
+          </div>{/* /xl-centered body */}
         </div>
       </article>
       <CRTOverlay enabled={effectsEnabled} forceFlicker={forceFlicker} />

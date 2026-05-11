@@ -98,19 +98,19 @@ function TransmittalsBody() {
           <pre className="whitespace-pre m-0 leading-[1.6]">
             {RULE}
             {"\n"}
-            {"SUBJECT       : TRANSMITTAL ARCHIVE — VATICAN COMPARISON SET"}
+            {"SUBJECT       : TRANSMITTAL ARCHIVE — TRANSCRIBED CORRESPONDENCE"}
             {"\n"}
-            {"CLASSIFICATION: INTERNAL REFERENCE / NOT FOR EXTERNAL DIST."}
+            {"CLASSIFICATION: PUBLIC // TRANSCRIPTION OF RECEIVED MATERIALS"}
             {"\n"}
             {RULE}
           </pre>
 
           <p className="mt-8 italic font-serif text-phosphor-dim m-0">
-            Correspondence between STATION ATLAS Section 3 and the Riserva
-            collection manager of the Vatican Apostolic Archive, spanning
-            the operational period 1968—2007. The standing arrangement
-            referenced throughout was never reduced to a single binding
-            document on either side.
+            correspondence transcribed from materials received by the
+            architect's family between approximately 1968 and 2007. the
+            apparatus has been instructed to make these visible. the
+            originals are not available for inspection. their substance,
+            to the degree it can be rendered, is preserved here.
           </p>
         </div>
 

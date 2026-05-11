@@ -52,19 +52,18 @@ function ForensicAnalysisBody() {
           <pre className="whitespace-pre m-0 leading-[1.6]">
             {RULE}
             {"\n"}
-            {"SUBJECT       : FORENSIC ANALYSIS — UNATTRIBUTED"}
+            {"SUBJECT       : FORENSIC ANALYSIS — INDEPENDENT ASSESSMENT"}
             {"\n"}
-            {"CLASSIFICATION: MODERN ASSESSMENT OF RECOVERED MATERIALS"}
+            {"CLASSIFICATION: PUBLIC // EXTERNAL ASSESSMENT"}
             {"\n"}
             {RULE}
           </pre>
 
           <p className="mt-8 italic font-serif text-phosphor-dim m-0">
-            What follows is presented without authorial attribution. The
-            text reads as the working notes of a researcher engaged in
-            authenticating the LOOKING GLASS leak. The notes were not
-            written for publication. They are reproduced here in full,
-            paginated as the original was paginated.
+            the following analysis was conducted by an external party
+            whose identity the architect has not been instructed to
+            disclose. the analysis was performed on the original
+            materials. the conclusions are the analyst's own.
           </p>
         </div>
 

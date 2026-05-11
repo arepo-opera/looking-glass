@@ -26,17 +26,28 @@ function StationAtlasBody() {
           <pre className="whitespace-pre m-0 leading-[1.6]">
             {RULE}
             {"\n"}
-            {"SUBJECT       : STATION ATLAS — RECOVERED DOCUMENTS"}
+            {"SUBJECT       : STATION ATLAS — TRANSCRIBED MATERIAL"}
             {"\n"}
-            {"CLASSIFICATION: PARTIAL ARCHIVE / PROVENANCE INCOMPLETE"}
+            {"CLASSIFICATION: PUBLIC // TRANSCRIPTION OF RECEIVED ARTIFACTS"}
             {"\n"}
             {RULE}
           </pre>
 
           <p className="mt-8 italic font-serif text-phosphor-dim m-0">
-            The following materials surfaced through unattributed channels.
-            Their authenticity has not been established. They are presented
-            without redaction beyond what was applied at the source.
+            the architect was instructed to transcribe the following
+            materials and present them through the apparatus's public
+            surface. the original artifacts are held. the transcriptions
+            preserve the substance of what was received. visual treatment
+            approximates the original physical character of the artifacts
+            to the degree the architect has been able to render it.
+            redactions appear where the originals were redacted.
+            annotations appear where marginalia exist on the originals.
+          </p>
+
+          <p className="mt-4 italic font-serif text-phosphor-dim m-0">
+            the architect has not been instructed to disclose the
+            provenance of these materials beyond stating that they were
+            received.
           </p>
         </div>
 

@@ -127,6 +127,20 @@ export async function kvSmembers(setKey: string): Promise<string[]> {
   return body.result ?? [];
 }
 
+// Atomic increment. Used for aggregate counters (no individual data,
+// no user identifiers). Returns the new value.
+export async function kvIncr(key: string): Promise<number> {
+  if (!kvConfigured()) return 0;
+  const url = `${KV_URL}/incr/${encodeURIComponent(key)}`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${KV_TOKEN}` },
+  });
+  if (!resp.ok) return 0;
+  const body = (await resp.json()) as { result: number };
+  return body.result ?? 0;
+}
+
 export function kvErrorResponse() {
   return {
     error: "storage not configured",
