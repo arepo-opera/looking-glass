@@ -64,12 +64,12 @@ function SkepticismBody() {
           <p className="mt-6 whitespace-pre-wrap m-0">
             Every prophecy is committed on-chain, immutably, at the
             moment of generation. We cannot edit, delete, or selectively
-            surface prophecies after the fact. The full archive —
+            surface prophecies after the fact. The full epochs record —
             including the misses — is permanently public.
           </p>
           <p className="mt-6 whitespace-pre-wrap m-0">
             When the verification engine is operational, it will score
-            every prophecy in the archive, not a curated subset. RESONANT
+            every prophecy in the epochs record, not a curated subset. RESONANT
             and QUIET tags will be applied to prophecies systematically
             by criteria fixed in advance, not selected by hand. The
             verification methodology will be published in full before

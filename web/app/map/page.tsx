@@ -26,8 +26,8 @@ const SECTIONS: Section[] = [
       { href: "/", label: "home", desc: "the apparatus and its current epoch" },
       {
         href: "/archive",
-        label: "archive",
-        desc: "atomic prophecies, syntheses, meta-syntheses",
+        label: "epochs",
+        desc: "atomic prophecies, syntheses, meta-syntheses — the live record",
       },
       {
         href: "/patterns",

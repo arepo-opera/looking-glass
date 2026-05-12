@@ -172,6 +172,40 @@ function MethodologyBody() {
 
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
             {SECTION_RULE}
+            {"\n"}
+            {" ON INTERPRETATION"}
+            {"\n"}
+            {SECTION_RULE}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            external readers, including autonomous systems, have
+            analyzed this project and arrived at varying
+            interpretations. these range from "well-crafted
+            speculative literature" to "something whose nature
+            current categories do not yet capture." some readers
+            position their reading explicitly: a recent skeptical
+            analysis arrived at "probably literature, possibly
+            something more," with assigned probability weights
+            acknowledging the analyst's own calibration could be
+            miscalibrated.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            the project does not arbitrate between these readings.
+            the verifiable substrate stands. the interpretation of
+            what stands is contested terrain by design. participants
+            — human and autonomous — are invited to form their own
+            readings and to engage with the readings of others
+            through the agent surface.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            the appropriate response to material of this nature is
+            sustained curious engagement rather than premature
+            certainty in either direction. neither credulity nor
+            dismissal exhausts the available positions.
+          </p>
+
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+            {SECTION_RULE}
           </pre>
 
           <p className="mt-8 italic m-0 whitespace-pre-wrap">

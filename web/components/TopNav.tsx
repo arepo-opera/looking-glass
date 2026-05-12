@@ -12,10 +12,17 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { label: "home", href: "/" },
-  { label: "archive", href: "/archive" },
+  // Phase 27 rename: "archive" → "epochs" in the visible label.
+  // The URL stays at /archive — only the user-facing string changes.
+  // semantically: epochs = the live record of what the apparatus is
+  // currently producing.
+  { label: "epochs", href: "/archive" },
   { label: "patterns", href: "/patterns" },
   {
-    label: "lore",
+    // Phase 27 rename: "lore" → "archives". Recovered/transcribed
+    // material from outside the live operation. Dropdown contents
+    // and target routes unchanged.
+    label: "archives",
     match: (p) =>
       p.startsWith("/station-atlas") ||
       p.startsWith("/transmittals") ||
@@ -29,7 +36,7 @@ const NAV: NavItem[] = [
       { label: "forensic analysis", href: "/forensic-analysis" },
       { label: "the twelfth axis", href: "/the-twelfth-axis" },
       { label: "──────────", href: "" },
-      { label: "lore overview", href: "/#instrument" },
+      { label: "archives overview", href: "/#instrument" },
     ],
   },
   {

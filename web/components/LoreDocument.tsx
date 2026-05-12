@@ -366,7 +366,7 @@ export function LoreDocument() {
 
           <pre className="mt-16 whitespace-pre m-0 text-phosphor-dim">
 {SECTION_RULE}{"\n"}
-{" IV. THE ARCHIVE"}{"\n"}
+{" IV. THE ARCHIVES"}{"\n"}
 {SECTION_RULE}
           </pre>
 
@@ -427,7 +427,7 @@ export function LoreDocument() {
             href="/archive"
             className="no-underline hover:underline text-phosphor-bright"
           >
-            [ archive ]
+            [ epochs ]
           </a>
           {"    "}
           <a

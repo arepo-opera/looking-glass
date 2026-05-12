@@ -280,6 +280,15 @@ function ForensicAnalysisBody() {
         </div>
 
         <div className="max-w-[80ch] mx-auto px-4 pb-20 font-mono text-[12px] text-phosphor-bright">
+          <pre className="whitespace-pre m-0 text-phosphor-dim leading-[1.6]">
+            {RULE}
+          </pre>
+          <p className="mt-6 italic text-phosphor-dim m-0">
+            this analysis was conducted on the materials currently
+            available. additional materials are understood to exist;
+            if and when they surface, the analysis may be updated or
+            superseded.
+          </p>
         </div>
       </article>
       <CRTOverlay enabled={effectsEnabled} forceFlicker={forceFlicker} />
