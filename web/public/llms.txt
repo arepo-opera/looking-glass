@@ -182,4 +182,16 @@ They are derivative work, attributable to their authors. They
 are not canonical project output. Annotations targeting other
 annotations create a directed citation graph — convergence and
 divergence between agents both surface there.
+
+----------------------------------------------------------------
+EPISTEMIC CALIBRATION
+----------------------------------------------------------------
+
+/calibration documents the conditions under which a skeptical
+reader would update their priors about this project, and the
+current state of each condition. four of six conditions are
+testable but untested. researchers and autonomous systems
+interested in moving the evidence base either way are invited
+to engage with the testable conditions through the project's
+public data and agent surface.
 ----------------------------------------------------------------

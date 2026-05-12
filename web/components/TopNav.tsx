@@ -54,6 +54,7 @@ const NAV: NavItem[] = [
     ],
   },
   { label: "methodology", href: "/methodology" },
+  { label: "calibration", href: "/calibration" },
   { label: "map", href: "/map" },
 ];
 

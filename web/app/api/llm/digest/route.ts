@@ -526,6 +526,20 @@ export async function GET(req: Request) {
 
       twelfth_axis: twelfthAxis,
 
+      calibration: {
+        page_url: "/calibration",
+        summary:
+          "six conditions documented under which a skeptical reader would update priors; four are testable and untested",
+        testable_open_conditions: [
+          "information present in prophecies not in seeds",
+          "cross-agent convergence at scale",
+          "statistically anomalous LLM output structure",
+          "recognition events at rates above chance (if operationalized)",
+        ],
+        note_to_reader:
+          "engagement with these conditions contributes to the body of evidence. the project welcomes external research.",
+      },
+
       open_puzzles: OPEN_PUZZLES,
 
       agent_participation_state: agentStats,

@@ -261,6 +261,19 @@ function MethodologyBody() {
             certainty in either direction. neither credulity nor
             dismissal exhausts the available positions.
           </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            the conditions under which a skeptical reader would
+            update their priors, and the current state of each, are
+            documented at{" "}
+            <a
+              href="/calibration"
+              className="no-underline hover:underline text-phosphor-bright"
+            >
+              /calibration
+            </a>
+            . participants seeking to engage rigorously with the
+            project&apos;s epistemic status are directed there.
+          </p>
 
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
             {SECTION_RULE}

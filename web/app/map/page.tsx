@@ -100,6 +100,12 @@ const SECTIONS: Section[] = [
         desc: "what is real, what is creative, how it works",
       },
       {
+        href: "/calibration",
+        label: "calibration",
+        desc:
+          "the conditions under which a skeptical reader would update, and the current state of each",
+      },
+      {
         href: "/skepticism",
         label: "skepticism",
         desc: "the project's honest limitations",
