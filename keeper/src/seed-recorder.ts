@@ -71,7 +71,8 @@ function structureSeeds(
 export async function recordSeedsForEpoch(
   epoch: number,
   seeds: SeedDisplay[],
-  models?: ModelConfig
+  models?: ModelConfig,
+  sourceSelections?: Record<string, unknown>
 ): Promise<void> {
   try {
     const structured = structureSeeds(seeds);
@@ -79,6 +80,9 @@ export async function recordSeedsForEpoch(
       captured_at_ts: Math.floor(Date.now() / 1000),
       ...structured,
       ...(models ? { models } : {}),
+      ...(sourceSelections && Object.keys(sourceSelections).length > 0
+        ? { source_selection: sourceSelections }
+        : {}),
     };
     const url = `${ENDPOINT_BASE}/${epoch}`;
     const resp = await fetch(url, {

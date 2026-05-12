@@ -23,6 +23,8 @@ import {
   type SynthesisConfig,
 } from "./synthesis";
 import { fetchAllSeeds } from "./seeds";
+import { gatherAndSelectAllSources } from "./source-runner";
+import type { SourceSelection } from "./source-selection";
 import type { SeedDisplay } from "./seeds/types";
 import { SseServer } from "./sse-server";
 import type { Status } from "./types";
@@ -53,6 +55,9 @@ interface KeeperState {
   epoch: number;
   nextTickSeconds: number;
   seeds: SeedDisplay[];
+  // Phase 29: per-category source selection updated each refreshSeeds
+  // cycle. Snapshotted into the seed POST payload at lock time.
+  selections: Record<string, SourceSelection>;
 }
 
 async function maybeInitialize(ctx: ClientCtx): Promise<void> {
@@ -248,6 +253,19 @@ async function refreshSeeds(
   } catch (e) {
     log.system(`seed refresh error: ${(e as Error)?.message ?? e}`);
   }
+
+  // Phase 29: gather all configured external sources, score by
+  // variance + resonance, and update state.selections so the next
+  // prophecy commit captures which source the apparatus attended
+  // to per category. Failure is non-blocking — the constraint
+  // engine continues to operate on the original 5-seed pipeline
+  // regardless.
+  try {
+    const run = await gatherAndSelectAllSources(state.epoch);
+    state.selections = run.selections;
+  } catch (e) {
+    log.system(`source selection error: ${(e as Error)?.message ?? e}`);
+  }
 }
 
 function broadcastStatus(state: KeeperState, sse: SseServer): void {
@@ -292,6 +310,7 @@ async function main(): Promise<void> {
     epoch: Number(lg.epoch),
     nextTickSeconds: MIN_TICK_INTERVAL_SECS,
     seeds: [],
+    selections: {},
   };
 
   const sse = new SseServer();
@@ -315,6 +334,7 @@ async function main(): Promise<void> {
   const contextProvider = (): ProphecyContext => ({
     seedDisplays: state.seeds,
     broadcast: (ev) => sse.broadcast(ev),
+    sourceSelections: state.selections,
   });
 
   // Seed the initial display before any tick / event handler can ask for it.

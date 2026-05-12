@@ -110,6 +110,9 @@ async function recentPriorProphecies(
 export interface ProphecyContext {
   seedDisplays: SeedDisplay[];
   broadcast?: (event: LiveEvent) => void;
+  // Phase 29: per-category source selection snapshot at lock time.
+  // Optional so callers that don't yet populate it keep working.
+  sourceSelections?: Record<string, unknown>;
 }
 
 export async function respondToProphecyRequest(
@@ -183,7 +186,12 @@ export async function respondToProphecyRequest(
     // Phase 20B-final: record the seed values that produced this lock
     // so the dashboard's archive endpoint can merge them into
     // /api/archive.json. Fire-and-forget; idempotent at the API.
-    void recordSeedsForEpoch(epoch, context.seedDisplays, prophecy.models);
+    void recordSeedsForEpoch(
+      epoch,
+      context.seedDisplays,
+      prophecy.models,
+      context.sourceSelections
+    );
   } catch (e: any) {
     const s = String(e?.message ?? e);
     if (s.includes("AlreadySubmitted")) {

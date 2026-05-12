@@ -29,6 +29,12 @@ export interface SourceSelection {
     variance: number;
     resonance: number;
     combined: number;
+    // Phase 29 integration: include the text_representation on every
+    // scored candidate (not just the winner) so the next epoch's
+    // variance scorer has prior text for non-selected sources too.
+    // Without this, only the prior winner's variance is meaningful;
+    // everyone else would be locked at the 0.5 neutral fallback.
+    text_representation: string;
   }>;
 }
 
@@ -128,6 +134,7 @@ export function selectForCategory(
       variance: Number(s.variance.toFixed(4)),
       resonance: Number(s.resonance.toFixed(4)),
       combined: Number(s.combined.toFixed(4)),
+      text_representation: s.src.text_representation,
     })),
   };
 }
