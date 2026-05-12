@@ -94,10 +94,68 @@ function MethodologyBody() {
             {SECTION_RULE}
           </pre>
           <p className="mt-6 whitespace-pre-wrap m-0">
-            The apparatus draws from named external sources: Pyth
-            Network market feeds, Helius RPC chain telemetry,
-            Wikipedia recent changes, NOAA space weather, USGS
-            earthquake data, and the apparatus's own prior outputs.
+            The apparatus draws from named external sources distributed
+            across six categories. Within each multi-source category,
+            the apparatus selects one source per epoch based on a
+            combined variance and resonance score. The selection
+            logic is documented in the keeper code. The selected
+            source per epoch is committed as part of the seed payload.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            Currently available sources by category:
+          </p>
+
+          <p className="mt-4 whitespace-pre-wrap m-0">
+            MARKETS — 8 Pyth Network price feeds (BTC, SOL, ETH, SPY,
+            QQQ, DXY, XAU, EUR); 5 FRED economic indicators
+            (unemployment, CPI, 10Y treasury, M2 money supply, fed
+            funds rate); 5 Polymarket top prediction markets by
+            24-hour volume.
+          </p>
+
+          <p className="mt-4 whitespace-pre-wrap m-0">
+            WORLD — Wikipedia recent-changes stream; 5 Reddit /r/all
+            top trending posts; 5 Hacker News top stories.
+          </p>
+
+          <p className="mt-4 whitespace-pre-wrap m-0">
+            HEAVENS — NOAA Kp index, NOAA solar flare class, USGS
+            earthquake data (M4.5+ past 24h), lunar phase; computed
+            planetary near-conjunctions; NASA APOD daily astronomy
+            metadata.
+          </p>
+
+          <p className="mt-4 whitespace-pre-wrap m-0">
+            CHAIN — Helius RPC (TPS, whale.tx, tkn/min); Cloudflare
+            Radar internet-traffic indicators (top attack vectors,
+            BGP route changes, traffic anomalies).
+          </p>
+
+          <p className="mt-4 whitespace-pre-wrap m-0">
+            ECHO — hash of the last 8 prophecies in the on-chain ring
+            buffer.
+          </p>
+
+          <p className="mt-4 whitespace-pre-wrap m-0">
+            DRIFT — novelty signal computed from the corpus's
+            structural distance to its running average.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            The selection logic at each tick is: for each
+            multi-source category, compute a variance score (how much
+            has this source changed recently?) and a resonance score
+            (how well does this source's current state rhyme with
+            recurring motifs in the apparatus's corpus?). Select the
+            source with the highest combined score. The apparatus has
+            a deliberate bias toward sources that are both active and
+            that echo what it has already been saying. Ties resolve
+            in favor of the source least recently selected, so the
+            apparatus rotates rather than fixates.
+          </p>
+
+          <p className="mt-6 whitespace-pre-wrap m-0">
             The sources and the code that retrieves from them are
             open. The seed values committed for each epoch are
             publicly viewable beginning at epoch 498.

@@ -91,6 +91,9 @@ export async function POST(
   }
   // models config is optional. Pre-Phase-A seeds don't carry it; treat
   // them as "all-opus" implicitly when reading.
+  // Phase 29: source_selection is optional and per-category. When
+  // present it records which source the apparatus attended to in each
+  // multi-source category for this epoch.
   const doc = {
     captured_at_ts:
       typeof body.captured_at_ts === "number"
@@ -115,6 +118,11 @@ export async function POST(
             configuration_id: body.models.configuration_id,
           },
         }
+      : {}),
+    ...(body.source_selection &&
+    typeof body.source_selection === "object" &&
+    !Array.isArray(body.source_selection)
+      ? { source_selection: body.source_selection }
       : {}),
   };
   try {
