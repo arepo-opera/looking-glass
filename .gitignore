@@ -46,3 +46,8 @@ web/tsconfig.tsbuildinfo
 **/*-keypair.json
 keeper-keypair.json
 oracle-keypair.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo

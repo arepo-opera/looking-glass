@@ -52,7 +52,7 @@ async function fetchQuakes(): Promise<QuakeStats> {
     signal: AbortSignal.timeout(8000),
     headers: {
       "User-Agent":
-        "looking-glass-keeper/0.3 (+https://github.com/mschreiber89/sator-looking-glass)",
+        "looking-glass-keeper/0.3 (+https://github.com/arepo-opera/looking-glass)",
       Accept: "application/json",
     },
   });

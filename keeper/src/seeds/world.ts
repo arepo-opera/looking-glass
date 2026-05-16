@@ -16,7 +16,7 @@ const WIKI_URL =
   "&rcprop=title%7Ctimestamp&rclimit=500&rctype=edit%7Cnew";
 const WIKI_HEADERS = {
   "User-Agent":
-    "looking-glass-keeper/0.3 (+https://github.com/mschreiber89/sator-looking-glass)",
+    "looking-glass-keeper/0.3 (+https://github.com/arepo-opera/looking-glass)",
   Accept: "application/json",
 };
 

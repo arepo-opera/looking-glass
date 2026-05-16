@@ -8,7 +8,7 @@ const SECTION_RULE = "═".repeat(60);
 
 const PROGRAM_ID = "EbacNay4EHbELApeWW11taBkForWW9qkZcGYFJGvuxKu";
 const EXPLORER_URL = `https://explorer.solana.com/address/${PROGRAM_ID}?cluster=devnet`;
-const KEEPER_REPO = "https://github.com/mschreiber89/sator-looking-glass";
+const KEEPER_REPO = "https://github.com/arepo-opera/looking-glass";
 
 function MethodologyBody() {
   const params = useSearchParams();
