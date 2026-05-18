@@ -8,22 +8,37 @@
 import { readFileSync } from "node:fs";
 import { createInterface } from "node:readline";
 import minimist from "minimist";
+import BN from "bn.js";
 import {
   Connection,
   Keypair,
-  PublicKey,
+  LAMPORTS_PER_SOL,
   Transaction,
   sendAndConfirmTransaction,
 } from "@solana/web3.js";
-import { PumpSdk } from "@pump-fun/pump-sdk";
+import {
+  PumpSdk,
+  OnlinePumpSdk,
+  getBuyTokenAmountFromSolAmount,
+} from "@pump-fun/pump-sdk";
 
 type Network = "devnet" | "mainnet";
+
+// Pump.fun tokens use 6 decimals (SPL Token 2022). The display divisor
+// is for human-readable output only — on-chain arithmetic uses raw BN.
+const TOKEN_DECIMALS = 6;
+
+// Transaction-fee headroom for priority + sig fees. Conservative for a
+// bundled create+ATA+buy at launch (typically <0.005 SOL even on busy
+// mainnet; the extra cushion swallows any unexpected priority spike).
+const TX_FEE_BUFFER_SOL = 0.02;
 
 const USAGE = `Usage: pnpm tsx scripts/launch-token.ts \\
   --network <devnet|mainnet> \\
   --mint-keypair <path-to-mint-keypair.json> \\
   --creator-keypair <path-to-creator-keypair.json> \\
   --metadata-uri <https://...> \\
+  --dev-buy-sol <amount> \\
   [--dry-run]
 
 Env:
@@ -71,7 +86,13 @@ async function confirm(prompt: string): Promise<boolean> {
 
 async function main() {
   const argv = minimist(process.argv.slice(2), {
-    string: ["network", "mint-keypair", "creator-keypair", "metadata-uri"],
+    string: [
+      "network",
+      "mint-keypair",
+      "creator-keypair",
+      "metadata-uri",
+      "dev-buy-sol",
+    ],
     boolean: ["dry-run", "help"],
     alias: { h: "help" },
   });
@@ -85,6 +106,7 @@ async function main() {
   const mintKeypairPath = argv["mint-keypair"] as string | undefined;
   const creatorKeypairPath = argv["creator-keypair"] as string | undefined;
   const metadataUri = argv["metadata-uri"] as string | undefined;
+  const devBuySolRaw = argv["dev-buy-sol"] as string | undefined;
   const dryRun = Boolean(argv["dry-run"]);
 
   const missing: string[] = [];
@@ -92,6 +114,7 @@ async function main() {
   if (!mintKeypairPath) missing.push("--mint-keypair");
   if (!creatorKeypairPath) missing.push("--creator-keypair");
   if (!metadataUri) missing.push("--metadata-uri");
+  if (devBuySolRaw === undefined || devBuySolRaw === "") missing.push("--dev-buy-sol");
   if (missing.length > 0) {
     console.error(`error: missing required argument(s): ${missing.join(", ")}\n`);
     console.error(USAGE);
@@ -100,6 +123,19 @@ async function main() {
   if (network !== "devnet" && network !== "mainnet") {
     fail(`--network must be 'devnet' or 'mainnet', got '${network}'`, 2);
   }
+
+  // Refuse to silently launch with no position. Reject zero, negatives,
+  // and any non-numeric string. Allow fractional SOL (lamport-resolution
+  // truncation happens downstream).
+  const devBuySol = Number(devBuySolRaw);
+  if (!Number.isFinite(devBuySol) || devBuySol <= 0) {
+    fail(
+      `--dev-buy-sol must be a positive number (got '${devBuySolRaw}'); ` +
+        `refusing to launch with no dev position.`,
+      2,
+    );
+  }
+  const devBuyLamports = new BN(Math.floor(devBuySol * LAMPORTS_PER_SOL));
 
   // ── Resolve RPC ────────────────────────────────────────────────────────
   let rpcUrl: string;
@@ -135,13 +171,17 @@ async function main() {
   }
 
   // ── Balance check ──────────────────────────────────────────────────────
+  // Creator must cover: floor cost (dust for rent etc.) + the dev buy +
+  // a tx fee buffer for the bundled create+ATA+buy.
   const balanceLamports = await connection.getBalance(creatorKeypair.publicKey);
-  const balanceSol = balanceLamports / 1_000_000_000;
-  const minSol = network === "mainnet" ? 0.1 : 0.05;
-  if (balanceSol < minSol) {
+  const balanceSol = balanceLamports / LAMPORTS_PER_SOL;
+  const minBaseSol = network === "mainnet" ? 0.1 : 0.05;
+  const requiredSol = minBaseSol + devBuySol + TX_FEE_BUFFER_SOL;
+  if (balanceSol < requiredSol) {
     fail(
       `insufficient balance: creator has ${balanceSol.toFixed(6)} SOL on ${network}, ` +
-        `need at least ${minSol} SOL`,
+        `need at least ${requiredSol.toFixed(6)} SOL ` +
+        `(${minBaseSol} floor + ${devBuySol} dev-buy + ${TX_FEE_BUFFER_SOL} tx-fee buffer)`,
     );
   }
 
@@ -162,6 +202,32 @@ async function main() {
     fail(`metadata is missing required fields: ${missingMeta.join(", ")}`);
   }
 
+  // ── Fetch pump.fun chain state for the buy estimate ───────────────────
+  // OnlinePumpSdk wraps the Connection and exposes the on-chain reads
+  // needed to compute the expected-tokens-out for a fresh bonding-curve
+  // buy. We fetch Global (always needed); FeeConfig is best-effort — the
+  // amount computer accepts null and degrades to a slightly less-precise
+  // estimate, which is acceptable because the on-chain transaction does
+  // its own authoritative pricing.
+  const onlineSdk = new OnlinePumpSdk(connection);
+  const global = await onlineSdk.fetchGlobal();
+  let feeConfig = null;
+  try {
+    feeConfig = await onlineSdk.fetchFeeConfig();
+  } catch {
+    // On networks where FeeConfig isn't deployed yet (e.g. some devnet
+    // states), fall back to null. The estimate stays usable.
+  }
+  const expectedTokens = getBuyTokenAmountFromSolAmount({
+    global,
+    feeConfig,
+    mintSupply: null, // fresh mint
+    bondingCurve: null, // fresh curve — derived from Global
+    amount: devBuyLamports,
+  });
+  const expectedTokensDisplay =
+    Number(expectedTokens.toString()) / 10 ** TOKEN_DECIMALS;
+
   // ── Summary ────────────────────────────────────────────────────────────
   console.log("");
   console.log("────────────────────────────────────────────────────────────────");
@@ -177,6 +243,13 @@ async function main() {
   console.log(` Metadata symbol  : ${String(metadata.symbol)}`);
   console.log(` Token name (ix)  : TENET`);
   console.log(` Token symbol (ix): TENET`);
+  console.log(` Dev buy amount   : ${devBuySol} SOL`);
+  console.log(
+    ` Expected tokens  : ~${expectedTokensDisplay.toLocaleString("en-US", {
+      maximumFractionDigits: 2,
+    })} TENET (estimate; SDK enforces 1% slippage tolerance)`,
+  );
+  console.log(` Transaction      : create + ATA + buy (atomic, single tx)`);
   console.log(` Dry-run          : ${dryRun ? "yes" : "no"}`);
   console.log("────────────────────────────────────────────────────────────────");
   console.log("");
@@ -187,32 +260,40 @@ async function main() {
   }
 
   // ── Confirmation ───────────────────────────────────────────────────────
-  const ok = await confirm('Type "yes" to submit the launch transaction: ');
+  const ok = await confirm(
+    `Type "yes" to launch TENET and buy ${devBuySol} SOL atomically: `,
+  );
   if (!ok) {
     console.error("aborted by user");
     process.exit(1);
   }
 
-  // ── Build createV2 instruction ─────────────────────────────────────────
-  // The pump.fun SDK builds the instruction offline (no RPC call needed
-  // for construction). The connection is used only for sendAndConfirm.
-  //
-  // mayhemMode is required by the SDK signature; false = standard bonding
-  // curve (the normal mode). mayhemMode: true is a separate pump.fun
-  // launch mode unrelated to a vanilla token deployment.
+  // ── Build atomic create + ATA + buy ───────────────────────────────────
+  // createV2AndBuyInstructions returns 3 instructions:
+  //   1. createV2          — initializes mint + bonding curve
+  //   2. createAssociatedTokenAccountIdempotent — creator's ATA
+  //   3. buy               — spend devBuyLamports for expectedTokens out
+  // All three are atomic in a single transaction. mayhemMode: false is
+  // the standard bonding curve. Slippage is hardcoded to 1% inside the
+  // SDK helper (which is what pump.fun's own launches use — at a fresh
+  // mint there is no pre-existing liquidity for an MEV bot to sandwich).
   const pumpSdk = new PumpSdk();
-  const ix = await pumpSdk.createV2Instruction({
+  const ixs = await pumpSdk.createV2AndBuyInstructions({
+    global,
     mint: mintKeypair.publicKey,
     name: "TENET",
     symbol: "TENET",
     uri: metadataUri!,
     creator: creatorKeypair.publicKey,
     user: creatorKeypair.publicKey,
+    amount: expectedTokens,
+    solAmount: devBuyLamports,
     mayhemMode: false,
   });
 
   // ── Submit ────────────────────────────────────────────────────────────
-  const tx = new Transaction().add(ix);
+  const tx = new Transaction();
+  for (const ix of ixs) tx.add(ix);
   let sig: string;
   try {
     sig = await sendAndConfirmTransaction(
