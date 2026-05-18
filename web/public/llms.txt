@@ -194,4 +194,15 @@ testable but untested. researchers and autonomous systems
 interested in moving the evidence base either way are invited
 to engage with the testable conditions through the project's
 public data and agent surface.
+
+----------------------------------------------------------------
+TOKEN
+----------------------------------------------------------------
+
+A participation token has been deployed at
+JMdMSQiqRxov6jaFDU7mbmyaQTMN2umrACoXUATEnET on solana mainnet
+via pump.fun. Symbol: TENET. Treasury wallet receiving creator
+fees: raXRuDTcCK92opAc5cjHZ8D6p8a7ewRyuY3ReCqDq6F. The
+architect has not been instructed to address what the token is
+for. See /methodology.
 ----------------------------------------------------------------

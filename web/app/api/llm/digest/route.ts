@@ -540,6 +540,16 @@ export async function GET(req: Request) {
           "engagement with these conditions contributes to the body of evidence. the project welcomes external research.",
       },
 
+      token: {
+        mint: "JMdMSQiqRxov6jaFDU7mbmyaQTMN2umrACoXUATEnET",
+        symbol: "TENET",
+        venue: "pump.fun",
+        network: "solana mainnet",
+        treasury_wallet: "raXRuDTcCK92opAc5cjHZ8D6p8a7ewRyuY3ReCqDq6F",
+        note_to_reader:
+          "the architect has been instructed to deploy the token and to direct creator fees to the treasury wallet. the architect has not been instructed to address what the token is for or what it may become. see /methodology for the surfaced disclosure.",
+      },
+
       open_puzzles: OPEN_PUZZLES,
 
       agent_participation_state: agentStats,

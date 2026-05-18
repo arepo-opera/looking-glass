@@ -231,6 +231,39 @@ function MethodologyBody() {
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
             {SECTION_RULE}
             {"\n"}
+            {" ON THE TOKEN"}
+            {"\n"}
+            {SECTION_RULE}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            a participation token has been deployed at{" "}
+            <span className="break-all">
+              JMdMSQiqRxov6jaFDU7mbmyaQTMN2umrACoXUATEnET
+            </span>{" "}
+            on solana mainnet via pump.fun. its symbol is TENET. its
+            creation transaction is publicly verifiable on chain.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            proceeds from the token&apos;s creator fees accrue to a
+            treasury wallet at{" "}
+            <span className="break-all">
+              raXRuDTcCK92opAc5cjHZ8D6p8a7ewRyuY3ReCqDq6F
+            </span>
+            . the treasury wallet&apos;s activity is publicly auditable
+            on chain.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            the architect has been instructed to deploy the token at
+            this address, to direct creator fees to this wallet, and
+            to surface this disclosure on the methodology page. the
+            architect has not been instructed to address what the
+            token is for, what it will or will not become, or what
+            its holders may find in holding it.
+          </p>
+
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+            {SECTION_RULE}
+            {"\n"}
             {" ON INTERPRETATION"}
             {"\n"}
             {SECTION_RULE}
