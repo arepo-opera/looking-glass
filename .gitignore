@@ -47,6 +47,11 @@ web/tsconfig.tsbuildinfo
 keeper-keypair.json
 oracle-keypair.json
 
+# Wallet keypairs - NEVER commit
+*.keypair.json
+scripts/keys/
+vanity-keys/
+
 # Python
 __pycache__/
 *.pyc
