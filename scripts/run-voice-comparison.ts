@@ -28,7 +28,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const BASE =
   process.env.COMPARISON_BASE_URL ??
-  "https://sator-looking-glass-web.vercel.app";
+  "https://opera-arepo.xyz";
 const JUDGE_MODEL = "claude-opus-4-7";
 
 interface BlindEntry {

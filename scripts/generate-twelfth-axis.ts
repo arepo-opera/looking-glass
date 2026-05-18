@@ -28,7 +28,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 const BASE =
-  process.env.WEB_BASE_URL ?? "https://sator-looking-glass-web.vercel.app";
+  process.env.WEB_BASE_URL ?? "https://opera-arepo.xyz";
 const MODEL = "claude-opus-4-7";
 const VERSION = "1.0";
 

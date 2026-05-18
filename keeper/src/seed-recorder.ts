@@ -10,7 +10,7 @@ import type { ModelConfig } from "./prophecy-generator";
 
 const ENDPOINT_BASE =
   process.env.SEED_RECORDER_URL ??
-  "https://sator-looking-glass-web.vercel.app/api/seeds";
+  "https://opera-arepo.xyz/api/seeds";
 
 interface MarketRow {
   label: string;

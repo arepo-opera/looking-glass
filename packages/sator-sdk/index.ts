@@ -2,7 +2,7 @@
 // No transitive deps; uses fetch (built-in to Node 18+ and all
 // modern browsers).
 
-const DEFAULT_BASE = "https://sator-looking-glass-web.vercel.app";
+const DEFAULT_BASE = "https://opera-arepo.xyz";
 
 export type AgentType =
   | "research"

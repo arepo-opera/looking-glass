@@ -176,21 +176,21 @@ export async function GET(_req: NextRequest) {
     next_layer1_estimated_at: null as string | null,
     next_layer2_estimated_at: null as string | null,
     methodology_url:
-      "https://sator-looking-glass-web.vercel.app/methodology",
+      "https://opera-arepo.xyz/methodology",
     skepticism_url:
-      "https://sator-looking-glass-web.vercel.app/skepticism",
-    archive_url: "https://sator-looking-glass-web.vercel.app/api/archive.json",
+      "https://opera-arepo.xyz/skepticism",
+    archive_url: "https://opera-arepo.xyz/api/archive.json",
     // Phase 20A — claim extraction is live; scoring (Phase 20B) is
     // not yet running. Claims for an individual prophecy/synthesis
     // come from /api/claims/{epoch|layer1|layer2}/{index}. Score
     // documents at /api/score/{type}/{index}; aggregate at
     // /api/score/summary.
     claims_url_template:
-      "https://sator-looking-glass-web.vercel.app/api/claims/{type}/{index}",
+      "https://opera-arepo.xyz/api/claims/{type}/{index}",
     score_url_template:
-      "https://sator-looking-glass-web.vercel.app/api/score/{type}/{index}",
+      "https://opera-arepo.xyz/api/score/{type}/{index}",
     score_summary_url:
-      "https://sator-looking-glass-web.vercel.app/api/score/summary",
+      "https://opera-arepo.xyz/api/score/summary",
     prophecy_corpus_stats: {
       total_prophecies: totalProphecies,
       average_length_chars: averageLength,

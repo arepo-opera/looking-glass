@@ -28,7 +28,7 @@ const ALL_MODULES = [
 ];
 
 const WEB_BASE =
-  process.env.WEB_BASE_URL ?? "https://sator-looking-glass-web.vercel.app";
+  process.env.WEB_BASE_URL ?? "https://opera-arepo.xyz";
 
 interface PriorSeedRecord {
   source_selection?: Record<

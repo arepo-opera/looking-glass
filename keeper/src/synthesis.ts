@@ -28,7 +28,7 @@ import { extractAndStoreSafe, loadExtractorConfig } from "./extraction";
 
 const SYNTHESIS_API_URL =
   process.env.SYNTHESIS_API_URL ??
-  "https://sator-looking-glass-web.vercel.app/api/synthesis";
+  "https://opera-arepo.xyz/api/synthesis";
 
 const MODEL = "claude-opus-4-7";
 

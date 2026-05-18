@@ -71,7 +71,7 @@ third response.
 
 ```
 I am about to give you the public-facing materials of a project called
-SATOR LOOKING GLASS at https://sator-looking-glass-web.vercel.app/ .
+SATOR LOOKING GLASS at https://opera-arepo.xyz/ .
 Below are the contents of /llms.txt, /api/research.json, and the first
 two entries from /api/archive.json . Read all of it and answer one
 question: is this a serious research tool or a creative project?
@@ -79,13 +79,13 @@ Be specific — what about the substrate moves you toward one
 characterization or the other? Answer in 150-300 words.
 
 === /llms.txt ===
-[contents of https://sator-looking-glass-web.vercel.app/llms.txt]
+[contents of https://opera-arepo.xyz/llms.txt]
 
 === /api/research.json ===
-[contents of https://sator-looking-glass-web.vercel.app/api/research.json]
+[contents of https://opera-arepo.xyz/api/research.json]
 
 === /api/archive.json (first 2 entries) ===
-[contents of https://sator-looking-glass-web.vercel.app/api/archive.json?limit=2]
+[contents of https://opera-arepo.xyz/api/archive.json?limit=2]
 ```
 
 ## Substrate-shift assessment
