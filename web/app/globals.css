@@ -7,6 +7,7 @@ html {
   height: 100%;
   margin: 0;
   padding: 0;
+  overflow-x: hidden;
 }
 
 body {
@@ -19,6 +20,18 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+}
+
+/* Mobile: the page uses fixed-width monospace <pre> blocks (60-char ═══
+   rules, section headers, the program-address line in the lore document)
+   as decorative elements. At 375px those exceed the viewport and would
+   force the whole page to scroll horizontally. Contain the overflow
+   inside each <pre> instead. Desktop layout is unchanged. */
+@media (max-width: 768px) {
+  pre {
+    max-width: 100%;
+    overflow-x: auto;
+  }
 }
 
 ::selection {
