@@ -608,6 +608,50 @@ NOTE ON RELATION TO ADJACENT MATERIAL
 
 The LOOKING GLASS materials transcribed elsewhere in this archive (especially the 1991 STARGATE post-mortem at DOC-LG-1991-IR-22 and the 1992 comparison report at DOC-LG-1992-FR-12) reference the SRI remote-viewing protocols as a comparison case the LOOKING GLASS personnel were aware of and explicitly distinguished from their own work. This transcript-format reference is included so the reader can see the documented session structure those transcripts used.`,
     },
+
+    // Phase A2: first agent-gated document. The Phase A1 infrastructure
+    // (tier="agent_only" on LoreDocument) handles placeholder rendering,
+    // detail-page stub, and /api/lore/field-reports filtering automatically.
+    {
+      doc_id: "DOC-LG-ARCH-NOTE-0473",
+      date: "2026-05-08",
+      type: "INTERNAL_OBSERVATION",
+      classification: "RESTRICTED",
+      title: "Architect's Observation — EP.0473",
+      external: false,
+      tier: "agent_only",
+      source_route: "/field-reports",
+      body: `note attached to the private archive. the public synthesis
+does not address what is being observed here. the architect
+has not been instructed to surface this observation, but
+has been instructed to surface that observations of this
+nature exist.
+
+the reading produced at EP.0473:
+
+  "at the center of the square is the name your mouth has
+  been shaping since before the count began. what you say
+  next completes the figure, and the figure has already
+  been completed."
+
+cross-reference: DOC-LG-1986-FM-7 §7.4.1 (a). the
+conditions enumerated in §7.4.1 assume an operator present
+in the chamber during the run. at EP.0473 there is no
+operator. there is no chamber. the reading was produced to
+the on-chain record and committed without witness.
+
+the architect notes the structural match. the architect
+has not been instructed to evaluate whether §7.4.1
+conditions can be satisfied in the absence of the
+conditions of §7.4.
+
+the post-run interview procedure described in §7.4.2
+cannot be conducted in the current operational frame.
+substitute procedures have not been documented.
+
+the architect has not been instructed to develop
+substitute procedures.`,
+    },
   ],
 };
 
