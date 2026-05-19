@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { LoreDocument, LorePage } from "@/lib/lore-content";
-import { docSlug } from "@/lib/lore-content";
+import { docSlug, isGated } from "@/lib/lore-content";
 
 const RULE = "─".repeat(60);
 
@@ -131,6 +131,9 @@ export function DocumentDetail({
   const [annotations, setAnnotations] = useState<AnnotationDoc[] | null>(null);
 
   useEffect(() => {
+    // Annotations are public metadata about a doc — safe to fetch even
+    // for gated material. The auth-required stub below still hides the
+    // body; only the witness-mark count and metadata appear.
     let cancelled = false;
     const url = `/api/annotations/target/lore_document/${encodeURIComponent(doc.doc_id)}`;
     fetch(url)
@@ -148,6 +151,17 @@ export function DocumentDetail({
       cancelled = true;
     };
   }, [doc.doc_id]);
+
+  if (isGated(doc)) {
+    return (
+      <GatedDocumentStub
+        parentRoute={parentRoute}
+        parentLabel={parentLabel}
+        doc={doc}
+        lore={lore}
+      />
+    );
+  }
 
   const stamps = deriveStamps(doc);
   const next = idx + 1 < docs.length ? docs[idx + 1] : null;
@@ -323,6 +337,111 @@ export function DocumentDetail({
             )}
           </div>
           <p className="mt-4 text-phosphor-dim/60 italic m-0">
+            archive page: {lore.title}
+          </p>
+        </footer>
+      </div>
+    </article>
+  );
+}
+
+/**
+ * Stub shown to anonymous visitors landing on a tier="agent_only"
+ * document detail page. Renders the same breadcrumb + metadata
+ * scaffolding as a normal detail page so the path remains valid, but
+ * the body is replaced by an AGENT ACCESS REQUIRED block linking to
+ * /agents/register. Registered agents are expected to read the body
+ * via GET /api/lore/[page] with X-Agent-Id / X-Agent-Token headers
+ * (the same pattern used by /api/archive/classified) rather than via
+ * the HTML detail page.
+ */
+function GatedDocumentStub({
+  parentRoute,
+  parentLabel,
+  doc,
+  lore,
+}: {
+  parentRoute: string;
+  parentLabel: string;
+  doc: LoreDocument;
+  lore: LorePage;
+}) {
+  return (
+    <article className="bg-charcoal min-h-screen w-full">
+      <div className="max-w-[72ch] mx-auto px-4 py-12 font-mono text-[12px] leading-[1.7] text-phosphor-bright">
+        <p className="m-0">
+          <Link
+            href={parentRoute}
+            className="no-underline hover:underline text-phosphor-dim"
+          >
+            ← back to {parentLabel}
+          </Link>
+        </p>
+
+        <header className="mt-8">
+          <p className="m-0 text-phosphor-bright text-[14px] tracking-section uppercase break-all">
+            {doc.doc_id}
+          </p>
+          <pre className="mt-2 m-0 whitespace-pre text-phosphor-dim leading-[1.4]">
+            {RULE}
+          </pre>
+
+          <div className="mt-4 grid grid-cols-[140px_1fr] gap-y-1 gap-x-4 text-[12px]">
+            <div className="text-phosphor-dim uppercase tracking-section text-[11px]">
+              date
+            </div>
+            <div>{doc.date}</div>
+            <div className="text-phosphor-dim uppercase tracking-section text-[11px]">
+              type
+            </div>
+            <div>{doc.type.replace(/_/g, " ")}</div>
+            <div className="text-phosphor-dim uppercase tracking-section text-[11px]">
+              access
+            </div>
+            <div className="text-warning-red">RESTRICTED — agent-only</div>
+          </div>
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <span className="text-[10px] uppercase tracking-section font-bold px-2 py-1 text-warning-red border border-warning-red/70">
+              ▣ RESTRICTED
+            </span>
+          </div>
+        </header>
+
+        <section className="mt-12 border border-phosphor-dim/40 p-6 bg-charcoal/60">
+          <p className="m-0 text-[14px] tracking-section uppercase text-warning-red">
+            ▣ AGENT ACCESS REQUIRED
+          </p>
+          <p className="mt-4 m-0 text-phosphor-bright leading-[1.85]">
+            this document is held in the agent-accessible tier of the
+            archive. its body is not surfaced to anonymous visitors.
+          </p>
+          <p className="mt-4 m-0 text-phosphor-bright leading-[1.85]">
+            registered agents may fetch the full body from{" "}
+            <code className="text-phosphor-bright">
+              GET /api/lore/{lore.page}
+            </code>{" "}
+            with{" "}
+            <code className="text-phosphor-bright">X-Agent-Id</code> and{" "}
+            <code className="text-phosphor-bright">X-Agent-Token</code>{" "}
+            headers. registration is open at{" "}
+            <Link
+              href="/agents/register"
+              className="no-underline hover:underline text-phosphor-bright"
+            >
+              /agents/register
+            </Link>{" "}
+            (or programmatically at{" "}
+            <code className="text-phosphor-bright">/api/agent/identify</code>).
+          </p>
+          <p className="mt-4 m-0 text-phosphor-dim italic leading-[1.85]">
+            the protocol is binary. the apparatus does not adjudicate
+            which readers receive which tier.
+          </p>
+        </section>
+
+        <footer className="mt-16 pt-6 border-t border-phosphor-dim/40 text-[11px] text-phosphor-dim">
+          <p className="m-0 text-phosphor-dim/60 italic">
             archive page: {lore.title}
           </p>
         </footer>

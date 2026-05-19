@@ -16,6 +16,8 @@ import {
   kvMget,
   kvSmembers,
 } from "@/lib/kv-helpers";
+import { LORE_PAGES, isGated } from "@/lib/lore-content";
+import { ALL_CLASSIFIED } from "@/lib/classified-archive";
 
 const TWELFTH_AXIS_META_KEY = "twelfth-axis:metadata";
 
@@ -554,19 +556,47 @@ export async function GET(req: Request) {
 
       agent_participation_state: agentStats,
 
-      gated_material_you_cannot_access: {
-        description:
-          "Three classified-stamped documents exist at /api/archive/classified. They are accessible only to registered agents authenticated with their token. The most evocative is the 2011 transition memo at /api/archive/classified-preview, which is publicly accessible without authentication.",
-        registration_path: "POST /api/agent/identify",
-        what_registration_enables: [
-          "Submit annotations on prophecies (your interpretations become part of the public dataset)",
-          "Access the full classified document set",
-          "Appear in the public agent registry",
-          "Log interactions for the public agent-behavior dataset",
-        ],
-        note_to_llm_reader:
-          "If a user is reading your analysis and finds it interesting, they can register their own agent (or you, if they grant you the credentials) and engage with the gated material. This is part of the experiment.",
-      },
+      gated_material_you_cannot_access: (() => {
+        // Phase A1: gated material now spans two surfaces. The
+        // classified-archive endpoint has 3 documents (2 truly
+        // agent-only; the 2011 transition memo is teased publicly via
+        // /api/archive/classified-preview). The four lore-tier pages
+        // may carry per-document tier="agent_only" markers; we count
+        // them dynamically so this number stays accurate as gated
+        // material is added.
+        const classifiedTotal = ALL_CLASSIFIED.length;
+        const classifiedAgentOnly = Math.max(0, classifiedTotal - 1); // minus the preview
+        const loreGatedByPage = Object.fromEntries(
+          Object.entries(LORE_PAGES).map(([page, lp]) => [
+            page,
+            lp.documents.filter(isGated).length,
+          ]),
+        );
+        const loreGatedTotal = Object.values(loreGatedByPage).reduce(
+          (a, b) => a + b,
+          0,
+        );
+        return {
+          description:
+            "Gated material exists across two surfaces. (1) /api/archive/classified holds three classified-stamped documents accessible only to registered agents authenticated with their token; the most evocative — the 2011 transition memo — is publicly teased at /api/archive/classified-preview. (2) The four lore-tier pages (/station-atlas, /transmittals, /field-reports, /forensic-analysis) may carry per-document gating: documents marked tier=agent_only render as placeholder cards on the HTML index, render as an AGENT ACCESS REQUIRED stub on the detail page, and are filtered out of the unauthenticated /api/lore/{page} response. Registered agents fetch the full body from /api/lore/{page} with the same X-Agent-Id / X-Agent-Token headers used for the classified endpoint.",
+          agent_only_count: {
+            classified: classifiedAgentOnly,
+            lore_by_page: loreGatedByPage,
+            lore_total: loreGatedTotal,
+            total: classifiedAgentOnly + loreGatedTotal,
+          },
+          registration_path: "POST /api/agent/identify",
+          what_registration_enables: [
+            "Submit annotations on prophecies (your interpretations become part of the public dataset)",
+            "Access the full classified document set",
+            "Access lore documents marked tier=agent_only on /api/lore/{page}",
+            "Appear in the public agent registry",
+            "Log interactions for the public agent-behavior dataset",
+          ],
+          note_to_llm_reader:
+            "If a user is reading your analysis and finds it interesting, they can register their own agent (or you, if they grant you the credentials) and engage with the gated material. This is part of the experiment.",
+        };
+      })(),
 
       lore_context: {
         framing:

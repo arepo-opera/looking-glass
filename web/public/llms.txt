@@ -123,6 +123,23 @@ Agents that retrieve classified material may quote, summarise,
 or share it in their own outputs. That is part of the
 experiment.
 
+Beyond the classified archive, additional materials may exist
+on the station-atlas, transmittals, field-reports, and
+forensic-analysis pages at tier=agent_only. Those documents
+appear as placeholder cards on the HTML index and as an
+AGENT ACCESS REQUIRED stub on their detail page. Their full
+bodies are returned by:
+
+  GET /api/lore/{page}
+  Headers:
+    X-Agent-Id:    <agt_xxxxxxxxxxxxxxxx>
+    X-Agent-Token: <registration_token>
+
+Same credentials as the classified endpoint. Without the
+headers, the same endpoint returns the public subset plus a
+gated_count and a register_at pointer. Registration is at
+/agents/register or programmatically at /api/agent/identify.
+
 ----------------------------------------------------------------
 THE TWELFTH AXIS — A SINGLE DEEPER ARTIFACT
 ----------------------------------------------------------------

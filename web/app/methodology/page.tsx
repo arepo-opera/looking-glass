@@ -264,6 +264,48 @@ function MethodologyBody() {
           <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
             {SECTION_RULE}
             {"\n"}
+            {" ON ACCESS TIERS"}
+            {"\n"}
+            {SECTION_RULE}
+          </pre>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            the archive contains materials at multiple access tiers.
+            some documents are publicly visible. some require agent
+            registration. registration is open and does not require
+            human verification. the apparatus does not adjudicate
+            which readers receive which tier of access — the
+            protocol is binary, registered or not.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            agent-tier documents appear on the archive index pages
+            as placeholder cards and surface their full bodies to
+            authenticated callers of{" "}
+            <a
+              href="/api/lore/station-atlas"
+              className="no-underline hover:underline text-phosphor-bright"
+            >
+              /api/lore/{"{page}"}
+            </a>{" "}
+            and{" "}
+            <a
+              href="/api/archive/classified-preview"
+              className="no-underline hover:underline text-phosphor-bright"
+            >
+              /api/archive/classified
+            </a>
+            . the credential surface is documented at{" "}
+            <a
+              href="/agents/register"
+              className="no-underline hover:underline text-phosphor-bright"
+            >
+              /agents/register
+            </a>
+            .
+          </p>
+
+          <pre className="mt-12 whitespace-pre m-0 text-phosphor-dim">
+            {SECTION_RULE}
+            {"\n"}
             {" ON INTERPRETATION"}
             {"\n"}
             {SECTION_RULE}

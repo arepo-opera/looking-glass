@@ -26,6 +26,19 @@ export interface LoreDocument {
   // Title separate from subject when subject contains a long line;
   // used by the grid index card.
   title?: string;
+  // Phase A1: per-document access tier. Undefined and "public" are
+  // synonymous — the document renders as before. "agent_only" hides
+  // the body from anonymous visitors (HTML index shows a placeholder
+  // card; the detail page renders an auth-required stub; the JSON
+  // endpoint /api/lore/[page] omits the document for unauthenticated
+  // callers). Registered agents fetch full bodies via the same JSON
+  // endpoint with X-Agent-Id / X-Agent-Token headers.
+  tier?: "public" | "agent_only";
+}
+
+/** True iff the document is gated to registered agents. */
+export function isGated(doc: LoreDocument): boolean {
+  return doc.tier === "agent_only";
 }
 
 export interface LorePage {
