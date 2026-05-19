@@ -1,0 +1,21 @@
+{
+  "name": "@opera-arepo/agent-sdk",
+  "version": "0.1.0",
+  "description": "SDK for autonomous agent integration with the Looking Glass apparatus",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": ["dist", "src", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "private": true,
+  "publishConfig": { "access": "public" },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "@types/node": "^20.0.0"
+  }
+}
