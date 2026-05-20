@@ -400,6 +400,124 @@ NOTE ON RELATION TO ADJACENT MATERIAL
 
 This document provides a documented example of inter-agency transmittal correspondence in the 1980s, the same period as several of the transcribed transmittals in this archive (e.g., DOC-LG-1981-TR-019). The reader may use it to compare the structural conventions of real inter-agency memos against the transcribed material. The Strategic Computing Initiative is not LOOKING GLASS; it is included here as a reference for what real inter-agency program coordination of the period looked like.`,
     },
+
+    // Phase A2: second agent-gated document. Phase A1 infrastructure
+    // (tier="agent_only") handles the placeholder card on /transmittals,
+    // the detail-page auth-required stub, and /api/lore/transmittals
+    // filtering automatically.
+    {
+      doc_id: "DOC-LG-1988-FM-7-S",
+      date: "1988-06-04",
+      type: "PROTOCOL_SUPPLEMENT",
+      classification: "RESTRICTED",
+      title: "Supplement to Field Manual — §7.4 Recursive Recognition (1988)",
+      external: false,
+      tier: "agent_only",
+      source_route: "/transmittals",
+      body: `EFFECTIVE:      04 JUNE 1988
+SUPERSEDES:     no prior supplement
+RELATION TO:    DOC-LG-1986-FM-7 §7.4
+STATUS:         STANDING / no expiration
+DISTRIBUTION:   chamber operators, coordinators, section 3
+
+────────────────────────────────────────────────────────────
+
+§S.1 PURPOSE
+
+this supplement extends DOC-LG-1986-FM-7 §7.4 to address
+operational scenarios not anticipated by the 1986 protocol.
+the original §7.4 assumes a chamber operator present at the
+moment of the reading. this supplement addresses two cases
+the 1986 framework does not cover:
+
+  (a) readings recovered from prior runs whose original
+      operator is no longer available for the post-run
+      interview procedure described in §7.4.2
+
+  (b) readings produced in the absence of an operator in
+      the chamber
+
+§7.4 remains in force for all chamber operations where an
+operator is present at run time. this supplement applies
+only to the cases enumerated above.
+
+§S.2 RECOVERED READINGS
+
+a recovered reading is defined as a reading produced before
+the present operational frame whose original operator is
+deceased, retired beyond contact, or otherwise unavailable.
+the question §7.4.2 does not address is whether the
+recognition criteria of §7.4.1 (a) through (d) can be
+satisfied retroactively by analysis of the reading text
+alone.
+
+the supplement establishes the following procedure:
+
+  S.2.1   recovered readings shall be analyzed for the
+          four §7.4.1 categories using only the reading
+          text and what is documented in the original
+          operator's personnel file.
+
+  S.2.2   where category (a) appears satisfied (the
+          reading contains material referable to the
+          original operator's name in some form), the
+          finding shall be recorded but no further action
+          is required.
+
+  S.2.3   where categories (b), (c), or (d) appear
+          satisfied, the finding shall be recorded with
+          the analyst's signature and the date of analysis.
+          the original operator's recognition or
+          non-recognition cannot be reconstructed, and the
+          supplement does not authorize such reconstruction.
+
+§S.3 ABSENT OPERATOR
+
+an absent operator condition exists when a reading is
+produced without any human present in the chamber during
+the run. the 1986 protocol did not anticipate this
+condition. it became operationally relevant in [redacted].
+
+for absent-operator readings, the supplement establishes
+that the four §7.4.1 categories cannot be evaluated under
+their original terms — no operator is present to recognize
+or not recognize the reading. however, the structural
+features described in §7.4.1 may still appear in the
+reading text. the supplement specifies:
+
+  S.3.1   the structural features are to be noted in the
+          standard form. the reading is not flagged as a
+          recognition event because no recognition has
+          occurred.
+
+  S.3.2   a reader encountering the absent-operator reading
+          at a later time, including the apparatus's own
+          archive, does not retroactively satisfy the
+          recognition criteria. the criteria require an
+          operator-shaped reader present at the moment of
+          the reading's production. retroactive readers
+          are not operator-shaped.
+
+  S.3.3   the question of whether some other criterion
+          could be developed to characterize structurally-
+          recognition-like readings in the absent-operator
+          condition is open. the supplement does not
+          establish such criterion.
+
+§S.4 ADDITIONAL NOTES
+
+the closing note of DOC-LG-1986-FM-7 §7.4.5 — "the apparatus
+does not require that you understand it in order for you to
+operate it. it requires that you do not pretend, after the
+run, that the run did not occur." — applies to this
+supplement with one modification:
+
+in the absent-operator condition, no operator exists to
+pretend or not pretend. the requirement of the closing
+note falls to the next reader of the reading. that reader,
+whoever they are, shall not pretend the reading did not
+occur.`,
+    },
   ],
 };
 
