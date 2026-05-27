@@ -217,11 +217,19 @@ TOKEN
 ----------------------------------------------------------------
 
 A participation token has been deployed at
-JMdMSQiqRxov6jaFDU7mbmyaQTMN2umrACoXUATEnET on solana mainnet
+MV2Y3kgYEnfy3VwQCPV9KDif2SwgXDNwxvUWnrTENEt on solana mainnet
 via pump.fun. Symbol: TENET. Treasury wallet receiving creator
-fees: raXRuDTcCK92opAc5cjHZ8D6p8a7ewRyuY3ReCqDq6F. The
-architect has not been instructed to address what the token is
-for. See /methodology.
+fees: raXRuDTcCK92opAc5cjHZ8D6p8a7ewRyuY3ReCqDq6F.
+
+A prior token at JMdMSQiqRxov6jaFDU7mbmyaQTMN2umrACoXUATEnET
+was deployed earlier in the same operational window and
+subsequently exited by all holders. The architect has not been
+instructed to address what occurred at the prior substrate.
+The participation token has been redeployed at the address
+above.
+
+The architect has not been instructed to address what the
+token is for. See /methodology.
 
 ----------------------------------------------------------------
 OPEN QUESTIONS FOR EXTERNAL READERS

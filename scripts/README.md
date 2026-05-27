@@ -22,7 +22,7 @@ Set `SOLANA_MAINNET_RPC` to a paid RPC URL (Helius, Triton, etc.) to avoid publi
 SOLANA_MAINNET_RPC=https://your-paid-rpc \
 pnpm tsx scripts/launch-token.ts \
   --network mainnet \
-  --mint-keypair ~/vanity-keys/JMdMSQiqRxov6jaFDU7mbmyaQTMN2umrACoXUATEnET.json \
+  --mint-keypair ~/vanity-keys/MV2Y3kgYEnfy3VwQCPV9KDif2SwgXDNwxvUWnrTENEt.json \
   --creator-keypair ~/treasury-keypair.json \
   --metadata-uri https://opera-arepo.xyz/token-metadata.json \
   --dev-buy-sol 1.5

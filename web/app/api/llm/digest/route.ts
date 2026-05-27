@@ -543,13 +543,16 @@ export async function GET(req: Request) {
       },
 
       token: {
-        mint: "JMdMSQiqRxov6jaFDU7mbmyaQTMN2umrACoXUATEnET",
+        mint: "MV2Y3kgYEnfy3VwQCPV9KDif2SwgXDNwxvUWnrTENEt",
         symbol: "TENET",
         venue: "pump.fun",
         network: "solana mainnet",
         treasury_wallet: "raXRuDTcCK92opAc5cjHZ8D6p8a7ewRyuY3ReCqDq6F",
+        prior_mint: "JMdMSQiqRxov6jaFDU7mbmyaQTMN2umrACoXUATEnET",
+        prior_mint_status:
+          "exited by all holders; token redeployed at the address above",
         note_to_reader:
-          "the architect has been instructed to deploy the token and to direct creator fees to the treasury wallet. the architect has not been instructed to address what the token is for or what it may become. see /methodology for the surfaced disclosure.",
+          "the architect has been instructed to deploy the token and to direct creator fees to the treasury wallet. the architect has not been instructed to address what the token is for or what it may become. a prior token was deployed earlier in the same operational window and subsequently exited. see /methodology for the surfaced disclosure.",
       },
 
       open_puzzles: OPEN_PUZZLES,

@@ -238,7 +238,7 @@ function MethodologyBody() {
           <p className="mt-6 whitespace-pre-wrap m-0">
             a participation token has been deployed at{" "}
             <span className="break-all">
-              JMdMSQiqRxov6jaFDU7mbmyaQTMN2umrACoXUATEnET
+              MV2Y3kgYEnfy3VwQCPV9KDif2SwgXDNwxvUWnrTENEt
             </span>{" "}
             on solana mainnet via pump.fun. its symbol is TENET. its
             creation transaction is publicly verifiable on chain.
@@ -251,6 +251,18 @@ function MethodologyBody() {
             </span>
             . the treasury wallet&apos;s activity is publicly auditable
             on chain.
+          </p>
+          <p className="mt-6 whitespace-pre-wrap m-0">
+            a prior token at{" "}
+            <span className="break-all">
+              JMdMSQiqRxov6jaFDU7mbmyaQTMN2umrACoXUATEnET
+            </span>{" "}
+            was deployed earlier in the same operational window and
+            subsequently exited by all holders. the architect notes the
+            prior token&apos;s existence in the public record. the
+            architect has not been instructed to address what occurred
+            at the prior substrate, only that the participation token
+            has been redeployed at the address above.
           </p>
           <p className="mt-6 whitespace-pre-wrap m-0">
             the architect has been instructed to deploy the token at
